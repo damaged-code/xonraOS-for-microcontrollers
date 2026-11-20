@@ -1,0 +1,19 @@
+# Copy to ~/.xonraos/config.txt and edit. Lines starting with # are ignored. Everything is optional.
+# The app server your Store reads (plain http:// only, no https).
+server=http://YOUR-SERVER
+# Pins use BCM (GPIO) numbers, not board pin numbers. -1 turns a part off.
+main=17
+second=27
+buzzer=18
+# Second button: off, home or back
+d6=back
+# 1 = 24 hour clock, 0 = 12 hour
+use24=1
+# 1 = buzzer on, 0 = muted
+sound=1
+# Screen upside down? set 1
+flip=0
+# Screen brightness 0-255
+brightness=207
+# Knob: MCP3008 channel 0-7 (the Pi has no analog input). Leave out if you have no knob.
+#knob=0

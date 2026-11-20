@@ -1,0 +1,13 @@
+# Start xonraOS at boot:  sudo cp xonraos.service /etc/systemd/system/ && sudo systemctl enable --now xonraos
+# Edit User= and the path below first.
+[Unit]
+Description=xonraOS on OLED
+After=network-online.target
+
+[Service]
+User=pi
+ExecStart=/home/pi/xonraOS-for-microcontrollers/pi/xonra
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

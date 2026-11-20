@@ -20,6 +20,10 @@ The expanded catalog adds Countdown, Focus, Breathe, Dice, Reaction, Math Quiz, 
 
 V2.0.4 adds **Settings > Storage/Memory**: used/total and free app-file storage (LittleFS), live free RAM (heap), and installed app slots. Values are in KiB (1,024 bytes). Hold to refresh storage, tap to go back; D6 also goes back when configured as Back. Storage totals describe the filesystem partition, not the entire flash chip.
 
+## Raspberry Pi
+
+xonraOS also runs on a Raspberry Pi 3B with the same OLED and the same apps: see [pi/README.md](pi/README.md).
+
 ## Hardware
 
 | Part | Connects to |
@@ -107,6 +111,7 @@ Save it as `server/apps/hello.js`, add `hello|Hello|1` to `server/manifest.txt`,
 ```
 firmware/WifiClock/   the OS (Arduino sketch)  - GPL-3.0
 server/               app server files and sample apps - MIT
+pi/                   Raspberry Pi 3B version (same apps) - GPL-3.0
 tools/harness.c       test an app on your computer
 docs/                 app guide and wiring diagram
 ```
