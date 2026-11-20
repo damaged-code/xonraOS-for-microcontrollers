@@ -56,6 +56,8 @@ The quickest way to try the Store is the public one. In `secrets.h` set:
 #define STORE_URL "http://35.174.38.92"
 ```
 
+Browse the apps, with a live preview of each one, at **https://apps.xonra.cyou**. (The website uses `https://`; the board itself uses the plain `http://` address above because it cannot do `https://`.)
+
 It serves whatever is in `server/` on the `main` branch of this repository (refreshed about every 10 minutes), so the apps there are the ones you see in the Store. To add an app, open a pull request that adds `server/apps/<id>.js` and a line in `server/manifest.txt`. Apps are reviewed before they are merged. The store is plain `http://` (the board cannot use `https://`), so install only apps you trust. It is a small hobby server and may go away; you can always host your own (next section).
 
 ## Run your own app server
