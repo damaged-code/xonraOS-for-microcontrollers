@@ -27,7 +27,7 @@ Sample apps in `server/apps/`: Counter, Stopwatch, Notes (scrolling text from yo
 | Buzzer (optional) | + to D8, - to GND |
 | Potentiometer (optional) | left pin 3V3, middle pin A0, right pin GND |
 
-Buttons use the internal pull-up, so no resistors are needed. A wiring diagram for a breadboard is in [docs/wiring.html](docs/wiring.html) (open it in a browser).
+Buttons use the internal pull-up, so no resistors are needed. A wiring diagram for a breadboard is in [docs/wiring.html](docs/wiring.html) (open it in a browser). An editable SVG copy for Figma or Inkscape is in [docs/wiring.svg](docs/wiring.svg).
 
 ## Controls
 
