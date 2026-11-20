@@ -1,0 +1,339 @@
+<title>OLED Breadboard Wiring</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: one centred column — diagram panel first, then one connections table, then notes per part. */
+  :root {
+    --bg: #f3f5f2;
+    --surface: #ffffff;
+    --fg: #1b2420;
+    --muted: #5b6862;
+    --line: #d6ddd8;
+    --accent: #0f7a5c;
+    --panel: #e7ece8;
+    --font-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+    --w-red: #d93a2b; --w-gnd: #2b2f2d; --w-scl: #e6b800; --w-sda: #ef7d1a; --w-btn: #1f9d55; --w-buz: #8e5bd6; --w-btn2: #1aa7c9; --w-pot: #e0569a;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #121815; --surface: #1a221e; --fg: #e3ebe6; --muted: #98a7a0;
+      --line: #2e3a34; --accent: #4fd1a5; --panel: #18201c; --w-gnd: #8a948f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #121815; --surface: #1a221e; --fg: #e3ebe6; --muted: #98a7a0;
+    --line: #2e3a34; --accent: #4fd1a5; --panel: #18201c; --w-gnd: #8a948f;
+    color-scheme: dark;
+  }
+  body {
+    background: var(--bg); color: var(--fg); font-family: var(--font-body);
+    font-size: 15px; line-height: 1.55;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 32px 48px;
+  }
+  main { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+  header { display: flex; flex-direction: column; gap: 6px; }
+  .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(28px, 5vw, 40px); line-height: 1.1; margin: 0; text-wrap: balance; }
+  h2 { font-family: var(--font-display); font-weight: 600; font-size: 22px; margin: 0 0 10px; }
+  p { margin: 0; max-width: 65ch; }
+  .lede { color: var(--muted); }
+  .figure { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .scroll { overflow-x: auto; }
+  svg.bb { display: block; width: 100%; min-width: 620px; height: auto; }
+  .caption { font-size: 13px; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 500; }
+  td.pin { font-family: var(--font-mono); font-weight: 500; }
+  tr.group td { font-family: var(--font-display); font-weight: 600; font-size: 15px; background: var(--panel); padding-block: 7px; }
+  tbody tr[data-w] { cursor: default; transition: background .15s; }
+  tbody tr[data-w]:hover, tbody tr[data-w].on { background: var(--surface); }
+  .sw { display: inline-block; width: 26px; height: 6px; border-radius: 3px; vertical-align: middle; margin-right: 8px; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; }
+  .cols > section { min-width: 0; }
+  ol, ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+  code { font-family: var(--font-mono); font-size: .92em; background: var(--panel); padding: 1px 5px; border-radius: 4px; }
+  .warn { border-left: 3px solid var(--w-sda); padding: 10px 14px; background: var(--surface); border-radius: 0 8px 8px 0; }
+  .wire { transition: opacity .15s, stroke-width .15s; }
+  svg.dim .wire { opacity: .18; }
+  svg.dim .wire.on { opacity: 1; stroke-width: 6; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<main>
+  <header>
+    <span class="eyebrow">ESP8266 NodeMCU · SSD1306 OLED · 2 buttons · buzzer · knob</span>
+    <h1>OLED Breadboard Wiring</h1>
+    <p class="lede">Everything the clock uses, on one breadboard: the screen, two push buttons, a buzzer and a potentiometer (the knob). The knob is wired for later: the software does not read it yet.</p>
+  </header>
+
+  <div class="figure">
+    <div class="scroll">
+      <svg class="bb" id="bb" viewBox="0 -24 790 560" role="img" aria-label="Breadboard diagram: ESP8266 straddling the centre gap with USB to the right and the OLED on the left. Two push buttons sit across the gap on the right, wired to D7 and D6 with a shared ground. A buzzer above them is wired to D8 and GND. A potentiometer below the breadboard is wired to 3V3, A0 and GND."></svg>
+    </div>
+    <p class="caption">Top view, USB port pointing right. Hover or tap a row in the table to highlight its wire. The board's D-pin side faces the top, so row <strong>a</strong> above it is free for wires. Buttons straddle the centre gap on the right, the buzzer sits above them, and the potentiometer is below the breadboard with three wires up to row <strong>j</strong>.</p>
+  </div>
+
+  <section>
+    <h2>Connections</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Wire</th><th>Part pin</th><th>ESP8266 pin</th><th>Breadboard holes</th></tr></thead>
+        <tbody id="rows">
+          <tr class="group"><td colspan="4">OLED screen (pins in row e, columns 4–7)</td></tr>
+          <tr data-w="vcc"><td><span class="sw" style="background:var(--w-red)"></span>Red</td><td class="pin">VCC</td><td class="pin">3V3</td><td class="pin">a4 → a17</td></tr>
+          <tr data-w="gnd"><td><span class="sw" style="background:var(--w-gnd)"></span>Black</td><td class="pin">GND</td><td class="pin">GND</td><td class="pin">a5 → a18</td></tr>
+          <tr data-w="scl"><td><span class="sw" style="background:var(--w-scl)"></span>Yellow</td><td class="pin">SCL</td><td class="pin">D1</td><td class="pin">a6 → a13</td></tr>
+          <tr data-w="sda"><td><span class="sw" style="background:var(--w-sda)"></span>Orange</td><td class="pin">SDA</td><td class="pin">D2</td><td class="pin">a7 → a14</td></tr>
+          <tr class="group"><td colspan="4">Main button (across the gap, columns 28 and 30)</td></tr>
+          <tr data-w="btn"><td><span class="sw" style="background:var(--w-btn)"></span>Green</td><td class="pin">Top-left leg</td><td class="pin">D7</td><td class="pin">a21 → a28</td></tr>
+          <tr data-w="btng"><td><span class="sw" style="background:var(--w-gnd)"></span>Black</td><td class="pin">Bottom-right leg</td><td class="pin">GND</td><td class="pin">j25 → j30</td></tr>
+          <tr class="group"><td colspan="4">Second button (across the gap, columns 32 and 34)</td></tr>
+          <tr data-w="btn2"><td><span class="sw" style="background:var(--w-btn2)"></span>Cyan</td><td class="pin">Top-left leg</td><td class="pin">D6</td><td class="pin">a20 → a32</td></tr>
+          <tr data-w="btn2g"><td><span class="sw" style="background:var(--w-gnd)"></span>Black</td><td class="pin">Bottom-right leg</td><td class="pin">GND (shared)</td><td class="pin">h30 → h34</td></tr>
+          <tr class="group"><td colspan="4">Buzzer (legs in d29 and d31)</td></tr>
+          <tr data-w="buz"><td><span class="sw" style="background:var(--w-buz)"></span>Purple</td><td class="pin">+ (marked leg)</td><td class="pin">D8</td><td class="pin">a22 → a29</td></tr>
+          <tr data-w="buzg"><td><span class="sw" style="background:var(--w-gnd)"></span>Black</td><td class="pin">− (other leg)</td><td class="pin">GND</td><td class="pin">a25 → a31</td></tr>
+          <tr class="group"><td colspan="4">Potentiometer (below the breadboard)</td></tr>
+          <tr data-w="pv"><td><span class="sw" style="background:var(--w-red)"></span>Red</td><td class="pin">Left pin</td><td class="pin">3V3</td><td class="pin">pot → j22</td></tr>
+          <tr data-w="pw"><td><span class="sw" style="background:var(--w-pot)"></span>Pink</td><td class="pin">Middle pin (wiper)</td><td class="pin">A0</td><td class="pin">pot → j12</td></tr>
+          <tr data-w="pg"><td><span class="sw" style="background:var(--w-gnd)"></span>Black</td><td class="pin">Right pin</td><td class="pin">GND</td><td class="pin">pot → j21</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="cols">
+    <section>
+      <h2>Steps</h2>
+      <ol>
+        <li>Unplug the USB cable.</li>
+        <li>Press the ESP8266 across the centre gap, USB end to the right, with its pins in columns 12–26. Its D-pin side goes in row <strong>b</strong>, the other side in row <strong>i</strong>.</li>
+        <li>Push the OLED's four pins into row <strong>e</strong>, columns 4–7, reading VCC, GND, SCL, SDA from left to right.</li>
+        <li>Press the two buttons across the gap: the main one at columns 28 and 30, the second at columns 32 and 34.</li>
+        <li>Push the buzzer's legs into d29 (the + leg) and d31.</li>
+        <li>Add the wires from the table, then plug the USB back in.</li>
+      </ol>
+    </section>
+    <section>
+      <h2>Before you power it</h2>
+      <ul>
+        <li>Use <strong>male-to-male</strong> jumpers. The female-to-female ones won't go into the holes.</li>
+        <li>Each column's 5 holes (a–e or f–j) are connected. Nothing connects across the centre gap.</li>
+        <li>Your board's numbers may not match this picture exactly. What matters is that each wire shares a column with the right pin.</li>
+        <li>Everything here runs from <strong>3V3</strong>. Never connect the knob's outer pins to 5 V: A0 only takes up to 3.3 V.</li>
+        <li>If the screen stays blank, check first that SCL goes to D1 and SDA to D2.</li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="cols">
+    <section>
+      <h2>The two buttons</h2>
+      <ul>
+        <li>Wire <strong>diagonally opposite legs</strong>. It works whichever way round the button is turned.</li>
+        <li>Each pin uses a built-in pull-up: it reads <code>HIGH</code> when the button is up and <code>LOW</code> when pressed. No resistor is needed.</li>
+        <li><strong>Main button (D7):</strong> tap = next, hold = select, hold 1.5 s = Home.</li>
+        <li><strong>Second button (D6):</strong> its job is set in Settings → D6 button (Off, Home or Back).</li>
+        <li>Avoid D3, D4 and D8 for buttons: the board checks them while starting up.</li>
+      </ul>
+    </section>
+    <section>
+      <h2>The buzzer</h2>
+      <ul>
+        <li><strong>Active</strong> buzzers have a sealed black bottom and beep on their own when powered. <strong>Passive</strong> ones show a green circuit board underneath and need the board to send a tone. Either one works.</li>
+        <li>D8 is checked at start-up and must be low. A buzzer to GND keeps it low, so that is fine.</li>
+        <li>Quick test: Settings → Sound. Turning it on plays a short beep.</li>
+        <li>No sound? The legs are probably the wrong way round. Swap them.</li>
+      </ul>
+    </section>
+  </div>
+
+  <section>
+    <h2>The potentiometer (knob)</h2>
+    <div class="cols">
+      <div>
+        <ul>
+          <li>The two outer pins are the ends of a resistor. The middle pin slides along it as you turn the shaft.</li>
+          <li>With 3V3 on one end and GND on the other, the middle pin gives <strong>0 to 3.3 V</strong>. A0 reads that as a number from 0 to 1023.</li>
+          <li>A0 is the board's only analog pin, so one knob is all it can read directly.</li>
+          <li>Swapping the outer wires just turns the knob the other way round.</li>
+        </ul>
+      </div>
+      <div>
+        <p class="warn"><strong>Not used yet.</strong> The clock's software does not read A0 so far. Wiring it now does no harm, and it is ready for a brightness knob or a game dial.</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  const svg = document.getElementById('bb');
+  const NS = 'http://www.w3.org/2000/svg';
+  const P = 22;
+  const X = c => 30 + (c - 1) * P;
+  const rowY = { a: 100, b: 122, c: 144, d: 166, e: 188, f: 232, g: 254, h: 276, i: 298, j: 320 };
+  const el = (tag, attrs, text) => {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (text != null) n.textContent = text;
+    svg.appendChild(n);
+    return n;
+  };
+  const mono = 'IBM Plex Mono, monospace';
+
+  // Breadboard body and centre gap
+  el('rect', { x: 4, y: 30, width: 772, height: 362, rx: 10, fill: '#ece9e1', stroke: '#c9c4b8' });
+  el('rect', { x: 4, y: 202, width: 772, height: 16, fill: '#dcd8cd' });
+
+  // Power rails (unused here, drawn for orientation)
+  [[48, '#d93a2b', '+'], [66, '#2f6fd1', '−'], [356, '#d93a2b', '+'], [374, '#2f6fd1', '−']].forEach(([y, col, s]) => {
+    el('line', { x1: 24, x2: 762, y1: y + (s === '+' ? -9 : 9), y2: y + (s === '+' ? -9 : 9), stroke: col, 'stroke-width': 1.5 });
+    el('text', { x: 12, y: y + 4, 'font-size': 11, fill: col, 'font-family': mono }, s);
+    for (let c = 1; c <= 34; c++) if (c % 6 !== 0) el('rect', { x: X(c) - 3, y: y - 3, width: 6, height: 6, rx: 1, fill: '#9a958a' });
+  });
+
+  // Highlight the columns used by wires
+  [4, 5, 6, 7, 13, 14, 17, 18, 20, 21, 22, 25, 28, 29, 31, 32].forEach(c => el('rect', { x: X(c) - 9, y: rowY.a - 9, width: 18, height: rowY.e - rowY.a + 18, rx: 4, fill: '#0f7a5c', opacity: 0.12 }));
+  [12, 21, 22, 25, 30, 34].forEach(c => el('rect', { x: X(c) - 9, y: rowY.f - 9, width: 18, height: rowY.j - rowY.f + 18, rx: 4, fill: '#0f7a5c', opacity: 0.12 }));
+
+  // Holes, row letters, column numbers
+  Object.entries(rowY).forEach(([r, y]) => {
+    el('text', { x: 14, y: y + 4, 'font-size': 10, fill: '#7d786d', 'font-family': mono, 'text-anchor': 'middle' }, r);
+    for (let c = 1; c <= 34; c++) el('rect', { x: X(c) - 3, y: y - 3, width: 6, height: 6, rx: 1, fill: '#9a958a' });
+  });
+  for (let c = 1; c <= 34; c++) if (c === 1 || c % 5 === 0 || [4, 7, 13, 17, 20, 21, 22, 28, 29, 31, 32].includes(c))
+    el('text', { x: X(c), y: 86, 'font-size': 9, fill: '#7d786d', 'text-anchor': 'middle', 'font-family': mono }, c);
+
+  // ESP8266 NodeMCU board (USB to the right)
+  const bx1 = X(11.5), bx2 = X(26.5);
+  el('rect', { x: bx1, y: rowY.b - 14, width: bx2 - bx1, height: rowY.i - rowY.b + 28, rx: 6, fill: '#1c1f1e', stroke: '#000' });
+  el('path', { d: `M${bx1 + 8} 150 h10 v20 h-10 v20 h10 v20 h-10 v20 h10 v20 h-10`, fill: 'none', stroke: '#c9a24a', 'stroke-width': 2 });
+  el('rect', { x: bx1 + 26, y: 146, width: 128, height: 118, rx: 3, fill: '#a9aeb0', stroke: '#7c8183' });
+  el('text', { x: bx1 + 90, y: 200, 'font-size': 14, 'font-weight': 600, fill: '#3b4042', 'text-anchor': 'middle', 'font-family': 'IBM Plex Sans, sans-serif' }, 'ESP-12E');
+  el('text', { x: bx1 + 90, y: 218, 'font-size': 10, fill: '#3b4042', 'text-anchor': 'middle', 'font-family': mono }, 'ESP8266');
+  el('rect', { x: 500, y: 168, width: 30, height: 30, rx: 2, fill: '#2c2f30' });
+  el('text', { x: 515, y: 212, 'font-size': 8, fill: '#9aa', 'text-anchor': 'middle', 'font-family': mono }, 'CP2102');
+  el('rect', { x: 448, y: 220, width: 26, height: 22, rx: 2, fill: '#2c2f30' });
+  [[565, 150, 'FLASH'], [565, 262, 'RST']].forEach(([x, y, t]) => {
+    el('rect', { x: x - 9, y: y - 9, width: 18, height: 18, rx: 3, fill: '#c9cccd' });
+    el('circle', { cx: x, cy: y, r: 5, fill: '#2a2a2a' });
+    el('text', { x: x, y: y + (t === 'RST' ? -14 : 22), 'font-size': 8, fill: '#cfd3d1', 'text-anchor': 'middle', 'font-family': mono }, t);
+  });
+  el('rect', { x: bx2 - 4, y: 190, width: 30, height: 40, rx: 3, fill: '#b8bcbe', stroke: '#8a8e90' });
+  el('text', { x: bx2 + 11, y: 250, 'font-size': 9, fill: '#7d786d', 'text-anchor': 'middle', 'font-family': mono }, 'USB');
+
+  // Pins: top row (row b) = D-pin side, bottom row (row i) = Vin side. Listed from the USB end.
+  const top = ['3V3', 'GND', 'TX', 'RX', 'D8', 'D7', 'D6', 'D5', 'GND', '3V3', 'D4', 'D3', 'D2', 'D1', 'D0'];
+  const bot = ['Vin', 'GND', 'RST', 'EN', '3V3', 'GND', 'CLK', 'SD0', 'CMD', 'SD1', 'SD2', 'SD3', 'RSV', 'RSV', 'A0'];
+  const usedTop = { 17: 1, 18: 1, 13: 1, 14: 1, 20: 1, 21: 1, 22: 1, 25: 1 };
+  const usedBot = { 12: 1, 21: 1, 22: 1, 25: 1 };
+  top.forEach((name, k) => {
+    const c = 26 - k;
+    el('circle', { cx: X(c), cy: rowY.b, r: 5, fill: '#c9a24a', stroke: '#8a6d2a' });
+    el('text', { x: X(c), y: rowY.b + 18, 'font-size': 7.5, fill: usedTop[c] ? '#ffd56a' : '#d5d9d7', 'font-weight': usedTop[c] ? 600 : 400, 'text-anchor': 'middle', 'font-family': mono }, name);
+  });
+  bot.forEach((name, k) => {
+    const c = 26 - k;
+    el('circle', { cx: X(c), cy: rowY.i, r: 5, fill: '#c9a24a', stroke: '#8a6d2a' });
+    el('text', { x: X(c), y: rowY.i - 10, 'font-size': 7.5, fill: usedBot[c] ? '#ffd56a' : '#8f9592', 'font-weight': usedBot[c] ? 600 : 400, 'text-anchor': 'middle', 'font-family': mono }, name);
+  });
+
+  // Two push buttons straddling the centre gap
+  const button = (c1, c2, label) => {
+    const mx = (X(c1) + X(c2)) / 2;
+    el('rect', { x: X(c1) - 10, y: rowY.e - 10, width: X(c2) - X(c1) + 20, height: rowY.f - rowY.e + 20, rx: 3, fill: '#2b2e30', stroke: '#111' });
+    el('circle', { cx: mx, cy: (rowY.e + rowY.f) / 2, r: 15, fill: '#3c4043', stroke: '#16181a', 'stroke-width': 2 });
+    [[c1, 'e'], [c2, 'e'], [c1, 'f'], [c2, 'f']].forEach(([c, r]) => el('rect', { x: X(c) - 4, y: rowY[r] - 4, width: 8, height: 8, rx: 1, fill: '#c3c7c9' }));
+    el('text', { x: mx, y: rowY.f + 30, 'font-size': 9, fill: '#7d786d', 'text-anchor': 'middle', 'font-family': mono }, label);
+  };
+  button(28, 30, 'D7 MAIN');
+  button(32, 34, 'D6');
+
+  // Buzzer above the buttons: + leg in d29, - leg in d31
+  const bzx = (X(29) + X(31)) / 2, bzy = 134;
+  [[X(29), bzx - 23], [X(31), bzx + 23]].forEach(([hx, bx]) => {
+    el('line', { x1: bx, y1: 150, x2: hx, y2: rowY.d, stroke: '#8a8e90', 'stroke-width': 2.5 });
+    el('rect', { x: hx - 4, y: rowY.d - 4, width: 8, height: 8, rx: 1, fill: '#c3c7c9' });
+  });
+  el('circle', { cx: bzx, cy: bzy, r: 28, fill: '#1c1f1e', stroke: '#000', 'stroke-width': 2 });
+  el('circle', { cx: bzx, cy: bzy, r: 9, fill: '#34393b' });
+  el('circle', { cx: bzx, cy: bzy, r: 3, fill: '#0e1011' });
+  el('text', { x: bzx - 21, y: bzy - 12, 'font-size': 12, 'font-weight': 600, fill: '#f0f2f2', 'text-anchor': 'middle', 'font-family': mono }, '+');
+  el('text', { x: bzx + 21, y: bzy - 12, 'font-size': 12, 'font-weight': 600, fill: '#f0f2f2', 'text-anchor': 'middle', 'font-family': mono }, '−');
+  el('text', { x: bzx, y: rowY.e + 10, 'font-size': 9, fill: '#7d786d', 'text-anchor': 'middle', 'font-family': mono }, 'BUZZER');
+
+  // Potentiometer below the breadboard: red base, round body with a shaft, three pins on the right
+  const pcx = 590, pcy = 477, padX = 664;
+  el('rect', { x: 540, y: 446, width: 110, height: 62, rx: 4, fill: '#a83a2d', stroke: '#7d2a20' });
+  el('circle', { cx: pcx, cy: pcy, r: 28, fill: '#d7d9da', stroke: '#9a9ea0', 'stroke-width': 2 });
+  el('circle', { cx: pcx, cy: pcy, r: 15, fill: '#b9bdbf', stroke: '#8a8e90', 'stroke-width': 2 });
+  el('line', { x1: pcx - 8, y1: pcy + 8, x2: pcx + 8, y2: pcy - 8, stroke: '#3b4042', 'stroke-width': 3, 'stroke-linecap': 'round' });
+  el('text', { x: 540, y: 438, 'font-size': 10, fill: '#7d786d', 'font-family': mono }, 'POTENTIOMETER (KNOB)');
+  [['Left', 458], ['Middle', 477], ['Right', 496]].forEach(([n, py]) => {
+    el('circle', { cx: padX, cy: py, r: 4.5, fill: '#c9a24a', stroke: '#8a6d2a' });
+    el('text', { x: padX + 9, y: py + 3, 'font-size': 8, fill: '#7d786d', 'font-family': mono }, n);
+  });
+
+  // OLED module: pins in row e, columns 4–7, body hanging down
+  const ocx = (X(4) + X(7)) / 2;
+  el('rect', { x: ocx - 112, y: rowY.e - 12, width: 224, height: 228, rx: 6, fill: '#1f4f8f', stroke: '#173a6a' });
+  el('rect', { x: ocx - 96, y: rowY.e + 26, width: 192, height: 118, rx: 2, fill: '#06090b' });
+  el('text', { x: ocx - 84, y: rowY.e + 58, 'font-size': 22, fill: '#8fe3ff', 'font-family': mono, 'font-weight': 500 }, '10:42');
+  el('text', { x: ocx - 84, y: rowY.e + 80, 'font-size': 10, fill: '#8fe3ff', 'font-family': mono }, 'Thu 19 Nov');
+  ['VCC', 'GND', 'SCL', 'SDA'].forEach((n, k) => {
+    el('circle', { cx: X(4 + k), cy: rowY.e, r: 5, fill: '#c9a24a', stroke: '#8a6d2a' });
+    el('text', { x: X(4 + k), y: rowY.e + 18, 'font-size': 8, fill: '#e8eef6', 'text-anchor': 'middle', 'font-family': mono }, n);
+  });
+
+  // Wires between breadboard holes, arcing over (row a) or under (rows h, j) the board
+  const wires = [
+    { id: 'vcc', from: 4, to: 17, h: 112, col: 'var(--w-red)' },
+    { id: 'gnd', from: 5, to: 18, h: 126, col: 'var(--w-gnd)' },
+    { id: 'scl', from: 6, to: 13, h: 72, col: 'var(--w-scl)' },
+    { id: 'sda', from: 7, to: 14, h: 88, col: 'var(--w-sda)' },
+    { id: 'btn', from: 21, to: 28, h: 62, col: 'var(--w-btn)' },
+    { id: 'btn2', from: 20, to: 32, h: 100, col: 'var(--w-btn2)' },
+    { id: 'btng', from: 25, to: 30, h: -80, col: 'var(--w-gnd)', row: 'j' },
+    { id: 'btn2g', from: 30, to: 34, h: -34, col: 'var(--w-gnd)', row: 'h' },
+    { id: 'buz', from: 22, to: 29, h: 78, col: 'var(--w-buz)' },
+    { id: 'buzg', from: 25, to: 31, h: 52, col: 'var(--w-gnd)' },
+  ];
+  wires.forEach(w => {
+    const x1 = X(w.from), x2 = X(w.to), y = rowY[w.row || 'a'];
+    const p = el('path', { d: `M${x1} ${y} C${x1} ${y - w.h} ${x2} ${y - w.h} ${x2} ${y}`, fill: 'none', 'stroke-width': 4.5, 'stroke-linecap': 'round', class: 'wire', 'data-w': w.id });
+    p.style.stroke = w.col;
+    [x1, x2].forEach(x => { const d = el('circle', { cx: x, cy: y, r: 4, class: 'wire', 'data-w': w.id }); d.style.fill = w.col; });
+  });
+
+  // Potentiometer leads: left to 3V3 (j22), middle to A0 (j12), right to GND (j21)
+  [
+    { id: 'pv', py: 458, col: 'var(--w-red)', d: `M${padX} 458 C 700 410 ${X(22)} 440 ${X(22)} ${rowY.j}`, end: [X(22), rowY.j] },
+    { id: 'pw', py: 477, col: 'var(--w-pot)', d: `M${padX} 477 C 500 440 ${X(12)} 450 ${X(12)} ${rowY.j}`, end: [X(12), rowY.j] },
+    { id: 'pg', py: 496, col: 'var(--w-gnd)', d: `M${padX} 496 C 520 430 ${X(21)} 430 ${X(21)} ${rowY.j}`, end: [X(21), rowY.j] },
+  ].forEach(w => {
+    const p = el('path', { d: w.d, fill: 'none', 'stroke-width': 4.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', class: 'wire', 'data-w': w.id });
+    p.style.stroke = w.col;
+    [[padX, w.py], w.end].forEach(([x, y]) => { const d = el('circle', { cx: x, cy: y, r: 4, class: 'wire', 'data-w': w.id }); d.style.fill = w.col; });
+  });
+
+  // Table <-> wire highlighting
+  const rows = document.querySelectorAll('tbody tr[data-w]');
+  const set = id => {
+    svg.classList.toggle('dim', !!id);
+    svg.querySelectorAll('.wire').forEach(n => n.classList.toggle('on', n.dataset.w === id));
+    rows.forEach(r => r.classList.toggle('on', r.dataset.w === id));
+  };
+  rows.forEach(r => {
+    r.addEventListener('mouseenter', () => set(r.dataset.w));
+    r.addEventListener('mouseleave', () => set(null));
+    r.addEventListener('click', () => set(r.classList.contains('on') ? null : r.dataset.w));
+  });
+})();
+</script>

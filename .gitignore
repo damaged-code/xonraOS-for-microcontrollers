@@ -1,0 +1,14 @@
+# Private Wi-Fi details
+firmware/WifiClock/secrets.h
+
+# Build output
+*.bin
+*.elf
+build/
+tools/harness
+tools/harness.exe
+
+# Local notes and editor files
+.vscode/
+.idea/
+*.log

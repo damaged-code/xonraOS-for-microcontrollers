@@ -1,0 +1,6 @@
+counter|Counter|3
+stopwatch|Stopwatch|4
+notes|Notes|6
+knobtest|Knob Test|2
+bounce|Bounce|3
+calculator|Calculator|6

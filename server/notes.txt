@@ -1,0 +1,13 @@
+Notes from your server.
+Edit server/notes.txt and these notes show up in the Notes app.
+
+Tap = scroll down one line
+D6 = scroll up
+Turn the knob to scroll fast
+Hold = reload from the server
+
+This note is long on purpose so it scrolls.
+Line 9
+Line 10
+Line 11
+Line 12
