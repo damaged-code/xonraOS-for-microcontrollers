@@ -12,3 +12,4 @@ tools/harness.exe
 .vscode/
 .idea/
 *.log
+catalog.json

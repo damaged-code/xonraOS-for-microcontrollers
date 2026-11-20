@@ -198,21 +198,30 @@
     return el;
   }
 
-  async function main() {
-    let manifest;
-    try { manifest = await (await fetch('manifest.txt', { cache: 'no-cache' })).text(); }
-    catch (e) { grid.innerHTML = '<p class="err">Could not load the app list.</p>'; return; }
+  // One request for everything: catalog.json is built by the server from manifest.txt and apps/.
+  // If it is missing (for example when serving the folder by hand), fall back to loading the files in parallel.
+  async function loadCatalog() {
+    try {
+      const r = await fetch('catalog.json');
+      if (r.ok) return (await r.json()).apps;
+    } catch (e) { /* fall through */ }
+    const manifest = await (await fetch('manifest.txt', { cache: 'no-cache' })).text();
     const entries = manifest.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
       const p = l.split('|'); return { id: p[0], name: p[1] || p[0], ver: p[2] || '1' };
     }).filter(e => /^[a-z0-9]+$/.test(e.id));
+    const apps = await Promise.all(entries.map(async e => {
+      try { return Object.assign(e, { code: await (await fetch('apps/' + e.id + '.js')).text() }); } catch (err) { return null; }
+    }));
+    return apps.filter(Boolean);
+  }
+
+  async function main() {
+    let apps;
+    try { apps = await loadCatalog(); }
+    catch (e) { grid.innerHTML = '<p class="err">Could not load the app list.</p>'; return; }
     grid.innerHTML = '';
-    if (!entries.length) { grid.innerHTML = '<p>No apps yet.</p>'; return; }
-    for (const e of entries) {
-      try {
-        const code = await (await fetch('apps/' + e.id + '.js', { cache: 'no-cache' })).text();
-        grid.appendChild(card(e, code));
-      } catch (err) { /* skip an app that fails to load */ }
-    }
+    if (!apps.length) { grid.innerHTML = '<p>No apps yet.</p>'; return; }
+    for (const a of apps) grid.appendChild(card(a, a.code));
   }
   main();
 })();
