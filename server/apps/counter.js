@@ -1,4 +1,5 @@
 //Counter|3|Count
+// Tap adds 1, D6 subtracts 1, hold resets to 0. The number is saved on the board.
 let n = 0;
 let ready = 0;
 let draw = function() {

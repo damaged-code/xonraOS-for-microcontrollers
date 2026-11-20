@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OLED OS App Store</title>
+<style>
+  :root {
+    --bg: #f4f6f4; --surface: #ffffff; --fg: #16201b; --muted: #5a6962; --line: #d8dfda;
+    --accent: #0c7a5a; --accent-fg: #ffffff; --screen: #04090c; --pixel: #8fe3ff; --code: #eef2ef;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0f1613; --surface: #17201c; --fg: #e4ece7; --muted: #94a59c; --line: #2a3731;
+      --accent: #4fd1a5; --accent-fg: #06201a; --code: #111a16; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: 0 max(16px, env(safe-area-inset-left, 0px)) 48px max(16px, env(safe-area-inset-right, 0px)); }
+  main { max-width: 980px; margin: 0 auto; }
+  header { padding: 36px 0 18px; }
+  h1 { margin: 0 0 6px; font-size: clamp(26px, 5vw, 38px); line-height: 1.15; letter-spacing: -0.01em; }
+  .lede { margin: 0; color: var(--muted); max-width: 62ch; }
+  .how { margin: 18px 0 26px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
+  .how h2 { margin: 0 0 6px; font-size: 16px; }
+  .how ol { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+  code, pre { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+  code { background: var(--code); padding: 1px 5px; border-radius: 4px; font-size: .92em; }
+  a { color: var(--accent); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 18px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+  .screen { background: var(--screen); border-radius: 8px; padding: 8px; }
+  canvas { display: block; width: 100%; height: auto; aspect-ratio: 2 / 1; image-rendering: pixelated; background: var(--screen); border-radius: 4px; }
+  .head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .head h3 { margin: 0; font-size: 18px; }
+  .ver { color: var(--muted); font-size: 12px; font-family: ui-monospace, Consolas, monospace; }
+  .desc { margin: 0; color: var(--muted); font-size: 14px; min-height: 2.9em; }
+  .ctl { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  button { font: inherit; font-size: 13px; padding: 6px 11px; border-radius: 7px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button:focus-visible, summary:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .knob { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-left: auto; }
+  .knob input { width: 90px; accent-color: var(--accent); }
+  .links { display: flex; gap: 14px; font-size: 13px; }
+  details summary { cursor: pointer; font-size: 13px; color: var(--accent); }
+  pre { margin: 8px 0 0; padding: 10px; background: var(--code); border-radius: 8px; overflow-x: auto; max-height: 260px; font-size: 12px; line-height: 1.45; }
+  .note { margin-top: 26px; color: var(--muted); font-size: 13px; }
+  .err { color: #c0392b; }
+  footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>OLED OS App Store</h1>
+    <p class="lede">Small apps for a tiny ESP8266 + OLED computer. Try each one right here, then install it on your board from its Store app.</p>
+  </header>
+
+  <section class="how" aria-label="How to install">
+    <h2>Install on your board</h2>
+    <ol>
+      <li>Set <code>STORE_URL</code> in <code>secrets.h</code> to this site's address and flash the firmware (see the project page).</li>
+      <li>On the board open <b>Store</b>, move to an app, and hold the main button. <code>GET</code> installs, <code>UPD</code> updates, <code>OK</code> removes.</li>
+      <li>The app appears on the Home screen.</li>
+    </ol>
+  </section>
+
+  <section class="grid" id="grid" aria-live="polite"><p>Loading apps…</p></section>
+
+  <p class="note">The preview approximates the 128×64 screen in your browser: fonts and timing differ a little from the real board. Buttons: <b>Tap</b> and <b>Hold</b> are the main button, <b>D6</b> is the second button, and the slider is the knob.</p>
+
+  <footer>
+    Open source: <a href="https://github.com/damaged-code/esp8266-oled-os">github.com/damaged-code/esp8266-oled-os</a>.
+    Want your app here? Open a pull request that adds <code>server/apps/&lt;id&gt;.js</code> and a line in <code>server/manifest.txt</code>.
+    Apps are reviewed before they are merged, but only install apps you trust.
+  </footer>
+</main>
+
+<script>
+(function () {
+  const grid = document.getElementById('grid');
+  const W = 128, H = 64;
+
+  // ---- the functions an app can call, drawn on a canvas ----
+  function makeApi(ctx, id, getKnob, loopKick) {
+    const px = '#8fe3ff', bg = '#04090c';
+    ctx.imageSmoothingEnabled = false;
+    const cell = (size) => 6 * size;
+    const glyph = (ch, x, y, size) => {
+      ctx.font = (8 * size) + 'px ui-monospace, Consolas, "Courier New", monospace';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = px;
+      ctx.fillText(ch, x + (size > 1 ? 0 : 0), y - size);
+    };
+    const wrapText = (x, y, size, s) => {
+      let cx = x, cy = y;
+      const cw = cell(size);
+      for (const ch of String(s)) {
+        if (ch === '\n') { cx = x; cy += 8 * size; continue; }
+        if (ch === '\r') continue;
+        if (cx + cw > W) { cx = 0; cy += 8 * size; }
+        glyph(ch, cx, cy, size);
+        cx += cw;
+      }
+    };
+    const store = k => 'oledos:' + id + ':' + k;
+    const syncGet = url => {
+      try { const r = new XMLHttpRequest(); r.open('GET', url, false); r.send(); return r.status === 200 ? r.responseText.slice(0, 1000) : ''; }
+      catch (e) { return ''; }
+    };
+    const now = () => new Date();
+    return {
+      text: (x, y, size, s) => wrapText(x, y, size || 1, s),
+      ctext: (y, size, s) => { size = size || 1; s = String(s); wrapText(Math.max(0, Math.floor((W - s.length * cell(size)) / 2)), y, size, s); },
+      rect: (x, y, w, h, fill) => { ctx.fillStyle = px; ctx.strokeStyle = px; ctx.lineWidth = 1; if (fill) ctx.fillRect(x, y, w, h); else ctx.strokeRect(x + .5, y + .5, w - 1, h - 1); },
+      clear: (x, y, w, h) => { ctx.fillStyle = bg; ctx.fillRect(x, y, w, h); },
+      line: (a, b, c, d) => { ctx.strokeStyle = px; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(a + .5, b + .5); ctx.lineTo(c + .5, d + .5); ctx.stroke(); },
+      dot: (x, y) => { ctx.fillStyle = px; ctx.fillRect(x, y, 1, 1); },
+      circle: (x, y, r, fill) => { ctx.beginPath(); ctx.arc(x + .5, y + .5, r, 0, 6.2832); ctx.fillStyle = px; ctx.strokeStyle = px; if (fill) ctx.fill(); else ctx.stroke(); },
+      str: n => String(Math.trunc(Number(n) || 0)),
+      num: s => parseInt(s, 10) || 0,
+      find: (s, t) => String(s).indexOf(String(t)),
+      sub: (s, i, n) => String(s).substr(Math.max(0, i), Math.max(0, Math.min(n, 159))),
+      lines: s => { let l = 1, c = 0; for (const ch of String(s)) { if (ch === '\n') { l++; c = 0; } else if (ch !== '\r') { if (++c > 21) { l++; c = 1; } } } return l; },
+      div: (a, b) => (b ? Math.trunc(a / b) : 0),
+      mod: (a, b) => (b ? a % b : 0),
+      ms: () => Math.floor(performance.now()) & 0x3fffffff,
+      timeok: () => 1,
+      hour: () => now().getHours(), minute: () => now().getMinutes(), second: () => now().getSeconds(),
+      wifi: () => 1,
+      http: url => syncGet(url),
+      server: () => location.origin,
+      save: s => { try { localStorage.setItem(store('v'), String(s).slice(0, 159)); } catch (e) {} },
+      load: () => { try { return localStorage.getItem(store('v')) || ''; } catch (e) { return ''; } },
+      knob: () => getKnob(),
+      beep: () => {},
+      exit: () => {},
+    };
+  }
+
+  function loadApp(code, api) {
+    const names = Object.keys(api);
+    const body = code + '\n;return { draw: typeof draw === "function" ? draw : null, tap: typeof tap === "function" ? tap : null, hold: typeof hold === "function" ? hold : null, prev: typeof prev === "function" ? prev : null };';
+    return new Function(...names, body)(...names.map(n => api[n]));
+  }
+
+  function describe(code) {
+    const lines = code.split('\n').slice(1);
+    const out = [];
+    for (const l of lines) { if (l.startsWith('//')) out.push(l.replace(/^\/\/\s?/, '')); else break; }
+    return out.join(' ').trim();
+  }
+
+  function card(entry, code) {
+    const el = document.createElement('article');
+    el.className = 'card';
+    const desc = describe(code) || 'No description yet.';
+    el.innerHTML =
+      '<div class="screen"><canvas width="128" height="64"></canvas></div>' +
+      '<div class="head"><h3></h3><span class="ver"></span></div>' +
+      '<p class="desc"></p>' +
+      '<div class="ctl"><button data-k="tap">Tap</button><button data-k="hold">Hold</button><button data-k="prev">D6</button>' +
+      '<label class="knob">knob <input type="range" min="0" max="1023" value="512" aria-label="Knob"></label></div>' +
+      '<div class="links"><a data-dl download>Download .js</a><a data-raw target="_blank" rel="noopener">Open raw</a></div>' +
+      '<details><summary>View code</summary><pre></pre></details>';
+    el.querySelector('h3').textContent = entry.name;
+    el.querySelector('.ver').textContent = 'v' + entry.ver + ' · ' + entry.id;
+    el.querySelector('.desc').textContent = desc;
+    el.querySelector('pre').textContent = code;
+    const href = 'apps/' + entry.id + '.js';
+    el.querySelector('[data-dl]').href = href; el.querySelector('[data-dl]').setAttribute('download', entry.id + '.js');
+    el.querySelector('[data-raw]').href = href;
+
+    const canvas = el.querySelector('canvas');
+    const ctx = canvas.getContext('2d');
+    const knob = el.querySelector('input');
+    const api = makeApi(ctx, entry.id, () => Number(knob.value), null);
+    let app = null, error = '';
+    try { app = loadApp(code, api); } catch (e) { error = String(e.message || e); }
+
+    const frame = () => {
+      ctx.fillStyle = '#04090c'; ctx.fillRect(0, 0, W, H);
+      if (app && app.draw) {
+        try { app.draw(); error = ''; } catch (e) { error = String(e.message || e); }
+      }
+      if (error) { ctx.fillStyle = '#04090c'; ctx.fillRect(0, 54, W, 10); api.text(0, 56, 1, 'ERR ' + error.slice(0, 17)); }
+    };
+    const fire = k => { if (app && app[k]) { try { app[k](); } catch (e) { error = String(e.message || e); } } };
+    el.querySelectorAll('button').forEach(b => b.addEventListener('click', () => fire(b.dataset.k)));
+
+    let visible = false, timer = null;
+    const tick = () => { if (visible) frame(); };
+    new IntersectionObserver(es => {
+      visible = es[0].isIntersecting;
+      if (visible && !timer) timer = setInterval(tick, 80);
+      if (!visible && timer) { clearInterval(timer); timer = null; }
+    }).observe(el);
+    frame();
+    return el;
+  }
+
+  async function main() {
+    let manifest;
+    try { manifest = await (await fetch('manifest.txt', { cache: 'no-cache' })).text(); }
+    catch (e) { grid.innerHTML = '<p class="err">Could not load the app list.</p>'; return; }
+    const entries = manifest.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+      const p = l.split('|'); return { id: p[0], name: p[1] || p[0], ver: p[2] || '1' };
+    }).filter(e => /^[a-z0-9]+$/.test(e.id));
+    grid.innerHTML = '';
+    if (!entries.length) { grid.innerHTML = '<p>No apps yet.</p>'; return; }
+    for (const e of entries) {
+      try {
+        const code = await (await fetch('apps/' + e.id + '.js', { cache: 'no-cache' })).text();
+        grid.appendChild(card(e, code));
+      } catch (err) { /* skip an app that fails to load */ }
+    }
+  }
+  main();
+})();
+</script>
+</body>
+</html>

@@ -4,6 +4,7 @@ The board's **Store** app downloads apps from a plain web server. No special sof
 
 ```
 server/
+  index.html       the website that lists the apps with live previews
   manifest.txt     one line per app:  id|Name|version
   apps/<id>.js     the apps (first line is the header //Name|version|Short)
   notes.txt        used by the Notes sample app
