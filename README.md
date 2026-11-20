@@ -1,6 +1,6 @@
-# esp8266-oled-os
+# xonraOS
 
-A tiny phone-style operating system for an **ESP8266 (NodeMCU)** with a **128x64 OLED** and **two buttons**. It has a Home screen, a Wi-Fi clock, two games, Settings, and an **app Store** that downloads small JavaScript apps from your own server. Anyone can write an app in a few lines and publish it by copying a file.
+**xonraOS** is a tiny phone-style operating system for an **ESP8266 (NodeMCU)** with a **128x64 OLED** and **two buttons**. It has a Home screen, a Wi-Fi clock, two games, Settings, and an **app Store** that downloads small JavaScript apps from your own server. Anyone can write an app in a few lines and publish it by copying a file.
 
 > Status: made by a beginner as a learning project and tested on one NodeMCU (ESP-12E, CP2102) board. Issues and pull requests are welcome.
 

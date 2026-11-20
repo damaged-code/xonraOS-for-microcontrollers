@@ -1,4 +1,4 @@
-# Writing apps
+# Writing apps for xonraOS
 
 Apps for the OS are small JavaScript files. The board downloads them from your [app server](../server/README.md) through the **Store** app and runs them with [Elk](https://github.com/cesanta/elk), a tiny JavaScript engine. You do not reflash the board to add or change an app.
 

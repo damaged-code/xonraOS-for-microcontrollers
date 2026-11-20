@@ -1,4 +1,4 @@
-# AGENTS.md
+# AGENTS.md (xonraOS)
 
 Instructions for AI coding agents working in this repository.
 

@@ -1,4 +1,4 @@
-// Phone-style OS on an ESP8266 (NodeMCU) + 0.96" OLED + 2 buttons.
+// xonraOS: a phone-style OS on an ESP8266 (NodeMCU) + 0.96" OLED + 2 buttons.
 //
 // Wiring:
 //   OLED   VCC -> 3V3, GND -> GND, SCL -> D1, SDA -> D2
@@ -1458,7 +1458,7 @@ void readButton() {
 // ---------- Startup ----------
 void splash() {
   unsigned long start = millis();
-  const char* title = "Wi-Fi Clock";
+  const char* title = "xonraOS";
   while (millis() - start < 1500) {
     unsigned long t = millis() - start;
     display.clearDisplay();
