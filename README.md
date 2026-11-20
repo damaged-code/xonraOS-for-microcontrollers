@@ -48,7 +48,17 @@ arduino-cli compile --upload -p COM5 --fqbn esp8266:esp8266:nodemcuv2 firmware/W
 
 If an upload fails with a write error, try again. If the board is not detected, install the CP210x USB driver.
 
-## Run the app server
+## Use the public app store
+
+The quickest way to try the Store is the public one. In `secrets.h` set:
+
+```
+#define STORE_URL "http://35.174.38.92"
+```
+
+It serves whatever is in `server/` on the `main` branch of this repository (refreshed about every 10 minutes), so the apps there are the ones you see in the Store. To add an app, open a pull request that adds `server/apps/<id>.js` and a line in `server/manifest.txt`. Apps are reviewed before they are merged. The store is plain `http://` (the board cannot use `https://`), so install only apps you trust. It is a small hobby server and may go away; you can always host your own (next section).
+
+## Run your own app server
 
 ```
 cd server
