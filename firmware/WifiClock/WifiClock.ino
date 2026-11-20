@@ -34,8 +34,8 @@ extern "C" {
 #include "secrets.h"
 
 // Firmware build number. Raise it for every release you publish (see tools/release-firmware.js).
-const int FW_VERSION = 3;
-const char* FW_VERSION_LABEL = "V2.0.1";
+const int FW_VERSION = 4;
+const char* FW_VERSION_LABEL = "V2.0.2";
 
 // STORE_URL (the app server that serves manifest.txt and apps/<id>.js) comes from secrets.h.
 
@@ -1536,11 +1536,24 @@ void readButton() {
 }
 
 // ---------- Startup ----------
+void startupChime() {
+  if (!prefs.sound) return;
+  sfx(1047, 100);
+  delay(130);
+  sfx(1319, 100);
+  delay(130);
+  sfx(1568, 180);
+  delay(200);
+  noTone(BUZZER_PIN);
+  digitalWrite(BUZZER_PIN, LOW);
+}
+
 void splash() {
   display.clearDisplay();
   centerText("welcome", 24, 2);
   display.display();
-  delay(900);
+  startupChime();
+  delay(prefs.sound ? 440 : 900);
 
   display.clearDisplay();
   centerText("xonraOS", 24, 2);
@@ -1579,6 +1592,7 @@ void setup() {
   configTime(TIME_ZONE, "pool.ntp.org", "time.google.com");
 
   if (prefs.anim) splash();
+  else startupChime();
   memset(lastFrame, 0, FRAME_BYTES);
 }
 
