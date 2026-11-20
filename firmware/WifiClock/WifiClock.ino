@@ -34,8 +34,8 @@ extern "C" {
 #include "secrets.h"
 
 // Firmware build number. Raise it for every release you publish (see tools/release-firmware.js).
-const int FW_VERSION = 4;
-const char* FW_VERSION_LABEL = "V2.0.2";
+const int FW_VERSION = 5;
+const char* FW_VERSION_LABEL = "V2.0.3";
 
 // STORE_URL (the app server that serves manifest.txt and apps/<id>.js) comes from secrets.h.
 
@@ -398,7 +398,7 @@ bool httpGetText(const String& url, String& out, size_t maxLen) {
 // ---------- Store app (downloads apps from your app server) ----------
 void goHome();
 enum StoreState { ST_FETCH, ST_LIST, ST_BUSY, ST_ERR };
-const int ST_MAX = 8;
+const int ST_MAX = 24;  // Store catalog capacity; installed-app limit remains separate.
 int stState = ST_FETCH, stCur = 0, stN = 0;
 unsigned long stReq = 0, stMsgAt = 0;
 char stId[ST_MAX][14], stName[ST_MAX][12], stVer[ST_MAX][8];

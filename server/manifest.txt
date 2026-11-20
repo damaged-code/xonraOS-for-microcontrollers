@@ -4,3 +4,13 @@ notes|Notes|6
 knobtest|Knob Test|2
 bounce|Bounce|3
 calculator|Calculator|6
+countdown|Countdown|1
+focus|Focus|1
+breathe|Breathe|1
+dice|Dice|1
+reaction|Reaction|1
+mathquiz|Math Quiz|1
+scoreboard|Scoreboard|1
+metronome|Metronome|1
+morse|Morse|1
+lanedodge|Lane Dodge|1

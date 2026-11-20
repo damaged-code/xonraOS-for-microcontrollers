@@ -39,8 +39,9 @@ int n_lines(char *s) { int l = 1, c = 0; for (; *s; s++) { if (*s == '\n') { l++
 const char *n_server() { return "http://example.local:8266"; }
 int n_knob() { static int k = 100; k += 300; return k % 1024; }  // fake potentiometer
 void n_beep(int f, int d) { printf("  beep(%d,%d)\n", f, d); }
-void n_save(char *s) { printf("  save(%s)\n", s); }
-const char *n_load() { char *b = nb(); strcpy(b, "5"); return b; }
+static char saved_value[160] = "5";
+void n_save(char *s) { snprintf(saved_value, sizeof saved_value, "%s", s); printf("  save(%s)\n", s); }
+const char *n_load() { char *b = nb(); strcpy(b, saved_value); return b; }
 const char *n_http(char *u) {  // fake body: 300 chars with line breaks, like a long note
   static char big[400];
   printf("  http(%s)\n", u);
@@ -52,6 +53,9 @@ struct js *J;
 void reg(const char *n, void *f, const char *sig) { js_set(J, js_glob(J), n, js_import(J, (uintptr_t)f, sig)); }
 
 int main(int argc, char **argv) {
+  if (argc < 2) { fprintf(stderr, "Usage: harness app.js [scenario.tsv]\n"); return 1; }
+  const char *initial = getenv("ELK_SAVED");
+  if (initial) snprintf(saved_value, sizeof saved_value, "%s", initial);
   static char heap[12000];  // same size as the board
   J = js_create(heap, sizeof heap);
   reg("text", n_text, "viiis"); reg("ctext", n_ctext, "viis"); reg("rect", n_rect, "viiiii");
@@ -67,11 +71,36 @@ int main(int argc, char **argv) {
   size_t n = fread(code, 1, sizeof code - 1, f); code[n] = 0; fclose(f);
   jsval_t r = js_eval(J, code, ~0);
   printf("load: %s\n", js_str(J, r));
+  if (strncmp(js_str(J, r), "ERROR", 5) == 0) return 1;
+  // Optional deterministic scenarios: milliseconds<TAB>expression<TAB>expected result.
+  if (argc > 2) {
+    FILE *scenario = fopen(argv[2], "r");
+    if (!scenario) { perror(argv[2]); return 1; }
+    char row[4096]; int rownum = 0;
+    while (fgets(row, sizeof row, scenario)) {
+      rownum++;
+      if (row[0] == '#' || row[0] == '\n') continue;
+      char *expression = strchr(row, '\t');
+      if (!expression) { fprintf(stderr, "Bad scenario row %d\n", rownum); fclose(scenario); return 1; }
+      *expression++ = 0;
+      char *expected = strchr(expression, '\t');
+      if (expected) { *expected++ = 0; expected[strcspn(expected, "\r\n")] = 0; }
+      fakems = atoi(row);
+      r = js_eval(J, expression, ~0);
+      const char *actual = js_str(J, r);
+      printf("scenario %d -> %s (heap %d%%)\n", rownum, actual, js_usage(J));
+      if (strncmp(actual, "ERROR", 5) == 0 || (expected && strcmp(expected, actual) != 0)) {
+        fprintf(stderr, "FAIL row %d: expected %s, got %s\n", rownum, expected ? expected : "no error", actual);
+        fclose(scenario); return 1;
+      }
+    }
+    fclose(scenario); return 0;
+  }
   const char *calls[] = { "draw();", "tap();", "draw();", "hold();", "draw();", "prev();", "draw();" };
   for (int i = 0; i < 7; i++) {
     fakems += 1234;
     r = js_eval(J, calls[i], ~0);
-    printf("%s -> %s (heap used %d of %d)\n", calls[i], js_str(J, r), js_usage(J), (int)sizeof heap);
+    printf("%s -> %s (heap %d%% of %d bytes)\n", calls[i], js_str(J, r), js_usage(J), (int)sizeof heap);
   }
   return 0;
 }

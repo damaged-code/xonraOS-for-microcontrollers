@@ -109,6 +109,8 @@ gcc -O1 -o harness tools/harness.c elk.c -lm      # elk.c and elk.h next to it o
 
 It loads the script, then calls `draw(); tap(); draw(); hold(); draw(); prev(); draw();` and prints every drawing call and every `ERROR`. (`ERROR: 'tap' not found` for a handler you did not write is fine.) A script that prints no drawing calls is broken even when no error shows. Change the fake functions at the top of `harness.c` (for example make `http` return real-looking data) to test other situations.
 
+For deterministic time and state assertions, pass a scenario TSV as the second argument (milliseconds, expression, optional expected result). A scenario failure exits nonzero. `ELK_SAVED` sets the starting saved value; `save()` updates what `load()` returns in that process. Heap usage is reported as a percentage of the 12 KB heap. Run `node tools/test-apps.js <harness-path>` for the ten-app pack tests; see [APP-PACK.md](APP-PACK.md).
+
 ## Publish
 
 1. Put `<id>.js` in `server/apps/`.
