@@ -18,6 +18,8 @@ Sample apps in `server/apps/`: Counter, Stopwatch, Notes (scrolling text from yo
 
 The expanded catalog adds Countdown, Focus, Breathe, Dice, Reaction, Math Quiz, Scoreboard, Metronome, Morse, and Lane Dodge. See [the app pack guide](docs/APP-PACK.md) for controls and limitations. Firmware V2.0.3 lists up to 24 Store entries; up to eight apps can be installed at once.
 
+V2.0.4 adds **Settings > Storage/Memory**: used/total and free app-file storage (LittleFS), live free RAM (heap), and installed app slots. Values are in KiB (1,024 bytes). Hold to refresh storage, tap to go back; D6 also goes back when configured as Back. Storage totals describe the filesystem partition, not the entire flash chip.
+
 ## Hardware
 
 | Part | Connects to |

@@ -34,8 +34,8 @@ extern "C" {
 #include "secrets.h"
 
 // Firmware build number. Raise it for every release you publish (see tools/release-firmware.js).
-const int FW_VERSION = 5;
-const char* FW_VERSION_LABEL = "V2.0.3";
+const int FW_VERSION = 6;
+const char* FW_VERSION_LABEL = "V2.0.4";
 
 // STORE_URL (the app server that serves manifest.txt and apps/<id>.js) comes from secrets.h.
 
@@ -161,11 +161,12 @@ const int HOME_BUILTIN = 5;           // Clock, Jump, Snake, Store, Settings
 int homeSel = 0;                       // tile on Home (built-ins: app = homeSel + 1)
 
 // Settings app
-const int SET_N = 8;  // Time format, Brightness, Seconds, Animations, D6 button, Sound, Wi-Fi setup, Firmware
+const int SET_N = 9;  // Includes Storage/Memory after Firmware
 int setCursor = 0;
 float setScroll = 0, setBar = 0;  // animated list scroll and highlight positions in pixels
 bool inNet = false;   // inside Settings > Wi-Fi setup
 bool inFw = false;    // inside Settings > Firmware
+bool inMemory = false;  // inside Settings > Storage/Memory
 
 // Wi-Fi setup state (the web server and scan list only exist while the portal is open)
 enum NetState { N_MENU, N_SCAN, N_PORTAL, N_TRYING, N_OK };
@@ -1173,7 +1174,35 @@ void drawFw() {
 }
 
 // ---------- Settings app ----------
-const char* settingLabel[SET_N] = { "Time format", "Brightness", "Seconds", "Animations", "D6 button", "Sound", "Wi-Fi setup", "Firmware" };
+FSInfo storageInfo;
+bool storageOk = false;
+
+void memoryOpen() {
+  inMemory = true;
+  storageOk = LittleFS.info(storageInfo);
+}
+
+void drawMemory() {
+  char b[32];
+  centerText("Storage / Memory", 0, 1);
+  if (storageOk) {
+    snprintf(b, sizeof(b), "Used: %lu/%lu KiB", (unsigned long)(storageInfo.usedBytes / 1024),
+             (unsigned long)(storageInfo.totalBytes / 1024));
+    centerText(b, 12, 1);
+    size_t freeBytes = storageInfo.totalBytes > storageInfo.usedBytes ? storageInfo.totalBytes - storageInfo.usedBytes : 0;
+    snprintf(b, sizeof(b), "Free: %lu KiB", (unsigned long)(freeBytes / 1024));
+    centerText(b, 22, 1);
+  } else {
+    centerText("Storage unavailable", 12, 1);
+  }
+  snprintf(b, sizeof(b), "RAM free: %lu KiB", (unsigned long)(ESP.getFreeHeap() / 1024));
+  centerText(b, 32, 1);
+  snprintf(b, sizeof(b), "Apps: %d/%d", instN, MAX_INST);
+  centerText(b, 42, 1);
+  centerText("Tap back Hold refresh", 56, 1);
+}
+
+const char* settingLabel[SET_N] = { "Time format", "Brightness", "Seconds", "Animations", "D6 button", "Sound", "Wi-Fi setup", "Firmware", "Storage/Memory" };
 const char* settingValue(int i) {
   switch (i) {
     case 0: return prefs.use24 ? "24h" : "12h";
@@ -1196,6 +1225,7 @@ void settingsActivate() {
     case 4: prefs.ctrl = (prefs.ctrl + 1) % 3; break;
     case 5: prefs.sound = !prefs.sound; if (prefs.sound) sfx(1000, 60); break;
     case 7: fwOpen(); return;
+    case 8: memoryOpen(); return;
     default:
       inNet = true;
       netState = N_MENU;
@@ -1206,6 +1236,7 @@ void settingsActivate() {
 }
 
 void drawSettings() {
+  if (inMemory) { drawMemory(); return; }
   if (inNet) { drawNet(); return; }
   if (inFw) { drawFw(); return; }
   display.setTextSize(1);
@@ -1366,6 +1397,7 @@ void appLeave(int a) {
     if (inNet) netCancel();
     inNet = false;
     inFw = false;
+    inMemory = false;
   }
 }
 
@@ -1374,7 +1406,7 @@ void appEnter(int a) {
   if (a == APP_SNAKE) snakeLoad();
   if (a == APP_SCRIPT) scriptLoad();
   if (a == APP_STORE) storeOpen();
-  if (a == APP_SETTINGS) { setCursor = 0; setScroll = 0; setBar = 0; inNet = false; inFw = false; }
+  if (a == APP_SETTINGS) { setCursor = 0; setScroll = 0; setBar = 0; inNet = false; inFw = false; inMemory = false; }
 }
 
 void gotoApp(int a) {
@@ -1428,7 +1460,9 @@ void onShortPress() {
       else if (stState == ST_ERR) storeOpen();
       break;
     case APP_SETTINGS:
-      if (inFw) {
+      if (inMemory) {
+        inMemory = false;
+      } else if (inFw) {
         if (fwState != FW_BUSY) inFw = false;  // tap = back
       } else if (inNet) {
         if (netState == N_MENU) netCursor = (netCursor + 1) % 4;
@@ -1450,7 +1484,9 @@ void onLongPress() {
       else if (stState == ST_ERR) storeOpen();
       break;
     case APP_SETTINGS:
-      if (inFw) {
+      if (inMemory) {
+        memoryOpen();
+      } else if (inFw) {
         if (fwState == FW_AVAIL) { fwState = FW_BUSY; fwReq = millis(); }  // hold = install
         else if (fwState != FW_BUSY) fwOpen();  // hold = check again
       } else if (inNet) {
@@ -1484,7 +1520,9 @@ void extraPress() {
       else goHome();
       break;
     case APP_SETTINGS:
-      if (inFw) {
+      if (inMemory) {
+        inMemory = false;
+      } else if (inFw) {
         if (fwState != FW_BUSY) inFw = false;
       } else if (inNet) {
         if (netState == N_MENU) netCursor = (netCursor + 3) % 4;
