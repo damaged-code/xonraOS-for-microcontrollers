@@ -34,7 +34,8 @@ extern "C" {
 #include "secrets.h"
 
 // Firmware build number. Raise it for every release you publish (see tools/release-firmware.js).
-const int FW_VERSION = 2;
+const int FW_VERSION = 3;
+const char* FW_VERSION_LABEL = "V2.0.1";
 
 // STORE_URL (the app server that serves manifest.txt and apps/<id>.js) comes from secrets.h.
 
@@ -1158,9 +1159,9 @@ void drawFw() {
     centerText("Hold: retry  Tap: back", 56, 1);
     return;
   }
-  snprintf(b, sizeof(b), "Installed: v%d", FW_VERSION);
+  snprintf(b, sizeof(b), "Installed: %s", FW_VERSION_LABEL);
   centerText(b, 14, 1);
-  snprintf(b, sizeof(b), "Latest:    v%d", fwLatest);
+  snprintf(b, sizeof(b), "Latest build: %d", fwLatest);
   centerText(b, 26, 1);
   if (fwState == FW_AVAIL) {
     centerText("Update available", 40, 1);
@@ -1181,7 +1182,7 @@ const char* settingValue(int i) {
     case 3: return prefs.anim ? "On" : "Off";
     case 4: return CTRL_NAMES[prefs.ctrl % 3];
     case 5: return prefs.sound ? "On" : "Off";
-    case 7: { static char fv[8]; snprintf(fv, sizeof(fv), "v%d", FW_VERSION); return fv; }
+    case 7: return FW_VERSION_LABEL;
     default: return ">";
   }
 }
@@ -1536,29 +1537,16 @@ void readButton() {
 
 // ---------- Startup ----------
 void splash() {
-  unsigned long start = millis();
-  const char* title = "xonraOS";
-  while (millis() - start < 1500) {
-    unsigned long t = millis() - start;
-    display.clearDisplay();
-    int r = t / 18;
-    if (r > 22) r = 22;
-    display.drawCircle(64, 26, r, SSD1306_WHITE);
-    if (r >= 22) {
-      float a = (t - 400) / 220.0f;
-      display.drawLine(64, 26, 64 + (int)(18 * sinf(a)), 26 - (int)(18 * cosf(a)), SSD1306_WHITE);
-      display.drawLine(64, 26, 64 + (int)(11 * sinf(a / 12)), 26 - (int)(11 * cosf(a / 12)), SSD1306_WHITE);
-      display.fillCircle(64, 26, 2, SSD1306_WHITE);
-    }
-    int chars = t > 300 ? (t - 300) / 60 : 0;
-    if (chars > (int)strlen(title)) chars = strlen(title);
-    char buf[16];
-    strncpy(buf, title, chars);
-    buf[chars] = 0;
-    centerText(buf, 56, 1);
-    display.display();
-    delay(16);
-  }
+  display.clearDisplay();
+  centerText("welcome", 24, 2);
+  display.display();
+  delay(900);
+
+  display.clearDisplay();
+  centerText("xonraOS", 24, 2);
+  centerText(FW_VERSION_LABEL, 52, 1);
+  display.display();
+  delay(1100);
 }
 
 void setup() {
