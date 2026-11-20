@@ -26,11 +26,15 @@
 #include <Adafruit_SSD1306.h>
 #include <LittleFS.h>
 #include <ESP8266HTTPClient.h>
+#include <ESP8266httpUpdate.h>
 #include <stddef.h>
 extern "C" {
 #include "elk.h"  // tiny JavaScript engine used for Store apps
 }
 #include "secrets.h"
+
+// Firmware build number. Raise it for every release you publish (see tools/release-firmware.js).
+const int FW_VERSION = 2;
 
 // STORE_URL (the app server that serves manifest.txt and apps/<id>.js) comes from secrets.h.
 
@@ -156,10 +160,11 @@ const int HOME_BUILTIN = 5;           // Clock, Jump, Snake, Store, Settings
 int homeSel = 0;                       // tile on Home (built-ins: app = homeSel + 1)
 
 // Settings app
-const int SET_N = 7;  // Time format, Brightness, Seconds, Animations, D6 button, Sound, Wi-Fi setup
+const int SET_N = 8;  // Time format, Brightness, Seconds, Animations, D6 button, Sound, Wi-Fi setup, Firmware
 int setCursor = 0;
 float setScroll = 0, setBar = 0;  // animated list scroll and highlight positions in pixels
 bool inNet = false;   // inside Settings > Wi-Fi setup
+bool inFw = false;    // inside Settings > Firmware
 
 // Wi-Fi setup state (the web server and scan list only exist while the portal is open)
 enum NetState { N_MENU, N_SCAN, N_PORTAL, N_TRYING, N_OK };
@@ -1103,8 +1108,71 @@ void drawNet() {
   }
 }
 
+// ---------- Firmware update (downloads a signed build from the app server) ----------
+// The server serves firmware/version.txt (a number) and firmware/xonraos.bin (the build, signed with
+// the private key that matches public.key in this folder). The board only accepts signed builds.
+enum FwState { FW_CHECK, FW_UPTODATE, FW_AVAIL, FW_BUSY, FW_FAIL };
+int fwState = FW_CHECK, fwLatest = 0;
+unsigned long fwReq = 0;
+String fwMsg;
+
+void fwOpen() {
+  inFw = true;
+  fwState = FW_CHECK;
+  fwReq = millis();
+  fwMsg = "";
+}
+
+void updateFw() {
+  if (app != APP_SETTINGS || !inFw || transActive || millis() - fwReq < 150) return;  // let one frame draw first
+  if (fwState == FW_CHECK) {
+    String body;
+    if (!httpGetText(String(STORE_URL) + "/firmware/version.txt", body, 32)) { fwState = FW_FAIL; fwMsg = "Can't reach server"; return; }
+    fwLatest = body.toInt();
+    if (fwLatest <= 0) { fwState = FW_FAIL; fwMsg = "No update info"; return; }
+    fwState = fwLatest > FW_VERSION ? FW_AVAIL : FW_UPTODATE;
+  } else if (fwState == FW_BUSY) {
+    WiFiClient c;
+    ESPhttpUpdate.rebootOnUpdate(true);
+    ESPhttpUpdate.update(c, String(STORE_URL) + "/firmware/xonraos.bin");  // reboots by itself when it succeeds
+    fwState = FW_FAIL;  // only reached when the update did not happen
+    fwMsg = ESPhttpUpdate.getLastErrorString().substring(0, 21);
+    if (fwMsg.length() == 0) fwMsg = "Update failed";
+  }
+}
+
+void drawFw() {
+  display.setTextSize(1);
+  display.setCursor(0, 0);
+  display.print("Firmware");
+  char b[24];
+  if (fwState == FW_CHECK) { centerText("Checking...", 28, 1); return; }
+  if (fwState == FW_BUSY) {
+    centerText("Updating...", 18, 2);
+    centerText("Don't unplug!", 42, 1);
+    return;
+  }
+  if (fwState == FW_FAIL) {
+    centerText("Failed", 14, 2);
+    centerText(fwMsg.c_str(), 36, 1);
+    centerText("Hold: retry  Tap: back", 56, 1);
+    return;
+  }
+  snprintf(b, sizeof(b), "Installed: v%d", FW_VERSION);
+  centerText(b, 14, 1);
+  snprintf(b, sizeof(b), "Latest:    v%d", fwLatest);
+  centerText(b, 26, 1);
+  if (fwState == FW_AVAIL) {
+    centerText("Update available", 40, 1);
+    centerText("Hold: install  Tap: back", 56, 1);
+  } else {
+    centerText("Up to date", 40, 1);
+    centerText("Tap: back", 56, 1);
+  }
+}
+
 // ---------- Settings app ----------
-const char* settingLabel[SET_N] = { "Time format", "Brightness", "Seconds", "Animations", "D6 button", "Sound", "Wi-Fi setup" };
+const char* settingLabel[SET_N] = { "Time format", "Brightness", "Seconds", "Animations", "D6 button", "Sound", "Wi-Fi setup", "Firmware" };
 const char* settingValue(int i) {
   switch (i) {
     case 0: return prefs.use24 ? "24h" : "12h";
@@ -1113,6 +1181,7 @@ const char* settingValue(int i) {
     case 3: return prefs.anim ? "On" : "Off";
     case 4: return CTRL_NAMES[prefs.ctrl % 3];
     case 5: return prefs.sound ? "On" : "Off";
+    case 7: { static char fv[8]; snprintf(fv, sizeof(fv), "v%d", FW_VERSION); return fv; }
     default: return ">";
   }
 }
@@ -1125,6 +1194,7 @@ void settingsActivate() {
     case 3: prefs.anim = !prefs.anim; break;
     case 4: prefs.ctrl = (prefs.ctrl + 1) % 3; break;
     case 5: prefs.sound = !prefs.sound; if (prefs.sound) sfx(1000, 60); break;
+    case 7: fwOpen(); return;
     default:
       inNet = true;
       netState = N_MENU;
@@ -1136,6 +1206,7 @@ void settingsActivate() {
 
 void drawSettings() {
   if (inNet) { drawNet(); return; }
+  if (inFw) { drawFw(); return; }
   display.setTextSize(1);
   display.setCursor(0, 0);
   display.print("Settings");
@@ -1293,6 +1364,7 @@ void appLeave(int a) {
   if (a == APP_SETTINGS) {
     if (inNet) netCancel();
     inNet = false;
+    inFw = false;
   }
 }
 
@@ -1301,7 +1373,7 @@ void appEnter(int a) {
   if (a == APP_SNAKE) snakeLoad();
   if (a == APP_SCRIPT) scriptLoad();
   if (a == APP_STORE) storeOpen();
-  if (a == APP_SETTINGS) { setCursor = 0; setScroll = 0; setBar = 0; inNet = false; }
+  if (a == APP_SETTINGS) { setCursor = 0; setScroll = 0; setBar = 0; inNet = false; inFw = false; }
 }
 
 void gotoApp(int a) {
@@ -1355,7 +1427,9 @@ void onShortPress() {
       else if (stState == ST_ERR) storeOpen();
       break;
     case APP_SETTINGS:
-      if (inNet) {
+      if (inFw) {
+        if (fwState != FW_BUSY) inFw = false;  // tap = back
+      } else if (inNet) {
         if (netState == N_MENU) netCursor = (netCursor + 1) % 4;
         else netCancel();
       } else {
@@ -1375,7 +1449,10 @@ void onLongPress() {
       else if (stState == ST_ERR) storeOpen();
       break;
     case APP_SETTINGS:
-      if (inNet) {
+      if (inFw) {
+        if (fwState == FW_AVAIL) { fwState = FW_BUSY; fwReq = millis(); }  // hold = install
+        else if (fwState != FW_BUSY) fwOpen();  // hold = check again
+      } else if (inNet) {
         if (netState == N_MENU) netSelect();
         else netCancel();
       } else {
@@ -1406,7 +1483,9 @@ void extraPress() {
       else goHome();
       break;
     case APP_SETTINGS:
-      if (inNet) {
+      if (inFw) {
+        if (fwState != FW_BUSY) inFw = false;
+      } else if (inNet) {
         if (netState == N_MENU) netCursor = (netCursor + 3) % 4;
         else netCancel();
       } else {
@@ -1520,6 +1599,7 @@ void loop() {
   updateSnake();
   updateNet();
   updateStore();
+  updateFw();
   if (scriptExitReq) { scriptExitReq = false; goHome(); }
 
   if (millis() - lastDraw < FRAME_MS) return;

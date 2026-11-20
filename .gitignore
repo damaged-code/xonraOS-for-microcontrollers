@@ -13,3 +13,8 @@ tools/harness.exe
 .idea/
 *.log
 catalog.json
+
+# Signing keys (never commit the private key)
+private.key
+*.key
+!firmware/WifiClock/public.key

@@ -12,5 +12,9 @@ Read [docs/APPS.md](docs/APPS.md) before writing or editing any app in `server/a
 - Apps and big buffers are loaded only while open (`appEnter` / `appLeave`); free heap memory when an app closes.
 - To add a function for apps, register it in `scriptLoad()` with signature letters `i`, `s`, `v` only (doubles break Elk's call convention), then update the harness and `docs/APPS.md`.
 
+## Firmware releases
+- OTA updates are signed. `firmware/WifiClock/public.key` must stay in the sketch folder: without it the build does not enforce signatures. Never commit or print `private.key` (it is git-ignored); the maintainer keeps it outside the repo.
+- To release: bump `FW_VERSION`, build with `--output-dir`, sign with `node tools/release-firmware.js <bin> <private.key> <outdir>`, then copy `xonraos.bin` and `version.txt` to `/firmware/` on the app server. The board then offers the update in Settings > Firmware. Source and the published build must carry the same version number.
+
 ## Licenses
 Firmware and tools: GPL-3.0. `server/`: MIT. Keep the license headers and credits for Elk.

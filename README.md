@@ -48,6 +48,20 @@ arduino-cli compile --upload -p COM5 --fqbn esp8266:esp8266:nodemcuv2 firmware/W
 
 If an upload fails with a write error, try again. If the board is not detected, install the CP210x USB driver.
 
+## Update the firmware over Wi-Fi
+
+Open **Settings > Firmware** on the board. It shows the installed build (for example `v2`) and the latest one on your app server. If a newer one exists, hold the main button to install it. The board downloads it, checks its signature, reboots and runs it. Do not unplug it while it says "Updating...".
+
+Safety: the board only installs builds **signed with the maintainer's private key**; the matching public key is built into the firmware (`firmware/WifiClock/public.key`). A tampered or unsigned file is refused. Anyone with a USB cable can still flash any firmware.
+
+For maintainers (publishing a release):
+1. Raise `FW_VERSION` in `WifiClock.ino`.
+2. Build: `arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 --output-dir build firmware/WifiClock`
+3. Sign: `node tools/release-firmware.js build/WifiClock.ino.bin <path to private.key> release`
+4. Copy `release/xonraos.bin` and `release/version.txt` to `firmware/` on your app server (so they are served at `/firmware/xonraos.bin` and `/firmware/version.txt`).
+
+To run your own releases, make your own key pair (see the comments in `tools/release-firmware.js`), replace `public.key`, flash once over USB, and sign with your private key. Never commit `private.key`.
+
 ## Use the public app store
 
 The quickest way to try the Store is the public one. In `secrets.h` set:
