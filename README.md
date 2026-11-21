@@ -10,7 +10,7 @@
 - **Clock:** time and date from the internet (NTP), 12 or 24 hour.
 - **Jump** and **Snake:** two games with high scores and sound.
 - **Settings:** time format, brightness, seconds, animations, what the second button does, sound, and **Wi-Fi setup from your phone** (the board opens its own network and a web page).
-- **Store:** lists the apps on your server. Hold a button to install, update or remove one. Installed apps appear on Home.
+- **Store:** browse category tiles, then app tiles, then an app's details. Hold to open a tile; on details, hold to get, update or remove the app. Installed apps appear on Home.
 - **Apps are JavaScript** ([Elk](https://github.com/cesanta/elk) engine). They can draw, read the buttons and a knob, play beeps, fetch web pages and save a value. See [docs/APPS.md](docs/APPS.md).
 - Apps are loaded into memory only while open, and many apps can be installed at once.
 
@@ -41,6 +41,8 @@ Buttons use the internal pull-up, so no resistors are needed. A wiring diagram f
 
 - **Main button (D7):** tap = next / action, hold 0.6 s = select, hold 1.5 s = back to Home.
 - **Second button (D6):** set in Settings > D6 button: Off, Home, or Back (previous item, turn left, jump).
+
+In the ESP8266 Store, a 1.5 s hold goes back one level (details â†’ apps â†’ categories â†’ Home). D6 in Back mode does the same; D6 in Home mode still goes straight Home. Tiles page automatically as you tap through them. Details show the app's leading comment description, an image placeholder, and empty stars (no ratings are collected). Long tile names are shortened; open a tile to see its full catalog name. This layout is available in V2.0.6 / OTA build 8; the Pi Store retains its category list.
 
 ## Build and flash
 

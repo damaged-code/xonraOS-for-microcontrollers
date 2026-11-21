@@ -34,8 +34,8 @@ extern "C" {
 #include "secrets.h"
 
 // Firmware build number. Raise it for every release you publish (see tools/release-firmware.js).
-const int FW_VERSION = 7;
-const char* FW_VERSION_LABEL = "V2.0.5";
+const int FW_VERSION = 8;
+const char* FW_VERSION_LABEL = "V2.0.6";
 
 // STORE_URL (the app server that serves manifest.txt and apps/<id>.js) comes from secrets.h.
 
@@ -399,17 +399,16 @@ bool httpGetText(const String& url, String& out, size_t maxLen) {
 // ---------- Store app (downloads apps from your app server) ----------
 void goHome();
 enum StoreState { ST_FETCH, ST_LIST, ST_BUSY, ST_ERR };
-const int ST_MAX = 24;  // Store catalog capacity; installed-app limit remains separate.
-int stState = ST_FETCH, stCur = 0, stN = 0, stTop = 0;
-unsigned long stReq = 0, stMsgAt = 0;
-char stId[ST_MAX][14], stName[ST_MAX][12], stVer[ST_MAX][8];
-uint8_t stCat[ST_MAX];  // category of each app, an index into ST_CATS
-String stMsg;
-float stScroll = 0, stBar = 0;  // list scroll and highlight positions in pixels, animated
-
-// Categories in the order the Store lists them. A missing or unknown category goes to "Other".
+enum StoreLevel { SL_CAT, SL_APP, SL_DETAIL };
+const int ST_MAX = 24;
 const int ST_CAT_N = 5;
 const char* ST_CATS[ST_CAT_N] = { "Tools", "Games", "Timers", "Sound", "Other" };
+int stState = ST_FETCH, stLevel = SL_CAT, stSel = 0, stCategory = 0, stCur = 0, stN = 0;
+unsigned long stReq = 0, stMsgAt = 0;
+char stId[ST_MAX][14], stName[ST_MAX][12], stVer[ST_MAX][8];
+uint8_t stCat[ST_MAX];
+String stMsg, stDesc;
+bool stDescPending = false;
 
 int storeCatIndex(String name) {
   name.trim();
@@ -417,43 +416,40 @@ int storeCatIndex(String name) {
   return ST_CAT_N - 1;
 }
 
-void storeSwap(int a, int b) {
-  char t[14];
-  strlcpy(t, stId[a], sizeof(stId[a])); strlcpy(stId[a], stId[b], sizeof(stId[b])); strlcpy(stId[b], t, sizeof(stId[b]));
-  strlcpy(t, stName[a], sizeof(stName[a])); strlcpy(stName[a], stName[b], sizeof(stName[b])); strlcpy(stName[b], t, sizeof(stName[b]));
-  strlcpy(t, stVer[a], sizeof(stVer[a])); strlcpy(stVer[a], stVer[b], sizeof(stVer[b])); strlcpy(stVer[b], t, sizeof(stVer[b]));
-  uint8_t c = stCat[a]; stCat[a] = stCat[b]; stCat[b] = c;
+int storeCount(int cat) {
+  int n = 0;
+  for (int i = 0; i < stN; i++) if (stCat[i] == cat) n++;
+  return n;
 }
 
-void storeSort() {  // group apps by category; the manifest order is kept inside each group
-  for (int i = 1; i < stN; i++)
-    for (int j = i; j > 0 && stCat[j - 1] > stCat[j]; j--) storeSwap(j - 1, j);
+int storeCategoryAt(int pos) {
+  for (int c = 0; c < ST_CAT_N; c++) if (storeCount(c) && pos-- == 0) return c;
+  return -1;
 }
 
-int storeRow(int i) {  // display row of app i: the first group's header always takes row 0
-  int r = i + 1;
-  for (int k = 1; k <= i; k++) if (stCat[k] != stCat[k - 1]) r++;
-  return r;
+int storeAppAt(int pos) {
+  for (int i = 0; i < stN; i++) if (stCat[i] == stCategory && pos-- == 0) return i;
+  return -1;
 }
 
-int storeTopRow() {  // first row shown; start on the group's header when that is where stTop is
-  int r = storeRow(stTop);
-  if (stTop == 0 || stCat[stTop] != stCat[stTop - 1]) r--;
-  return r < 0 ? 0 : r;
+int storeChoices() {
+  if (stLevel == SL_DETAIL) return 0;
+  if (stLevel == SL_APP) return storeCount(stCategory);
+  int n = 0;
+  for (int c = 0; c < ST_CAT_N; c++) if (storeCount(c)) n++;
+  return n;
 }
 
 void storeOpen() {
-  stScroll = 0;
-  stBar = 0;
   stState = ST_FETCH;
+  stLevel = SL_CAT;
+  stSel = stCur = stCategory = stN = 0;
   stReq = millis();
-  stCur = 0;
-  stTop = 0;
-  stN = 0;
-  stMsg = "";
+  stMsg = stDesc = "";
+  stDescPending = false;
 }
 
-void storeFetch() {  // manifest.txt lines: id|Name|version|Category  (Category is optional)
+void storeFetch() {
   String body;
   if (!httpGetText(String(STORE_URL) + "/manifest.txt", body, 2000)) { stState = ST_ERR; return; }
   stN = 0;
@@ -461,51 +457,119 @@ void storeFetch() {  // manifest.txt lines: id|Name|version|Category  (Category 
   while (pos < (int)body.length() && stN < ST_MAX) {
     int e = body.indexOf('\n', pos);
     if (e < 0) e = body.length();
-    String line = body.substring(pos, e);
+    String row = body.substring(pos, e);
     pos = e + 1;
-    line.trim();
-    int a = line.indexOf('|');
-    if (a <= 0) continue;
-    int b = line.indexOf('|', a + 1);
-    if (b < 0) continue;
-    int c = line.indexOf('|', b + 1);
-    strlcpy(stId[stN], line.substring(0, a).c_str(), sizeof(stId[stN]));
-    strlcpy(stName[stN], line.substring(a + 1, b).c_str(), sizeof(stName[stN]));
-    if (c < 0) {  // line from an older manifest: no category
-      strlcpy(stVer[stN], line.substring(b + 1).c_str(), sizeof(stVer[stN]));
-      stCat[stN] = ST_CAT_N - 1;
-    } else {
-      strlcpy(stVer[stN], line.substring(b + 1, c).c_str(), sizeof(stVer[stN]));
-      stCat[stN] = storeCatIndex(line.substring(c + 1));
-    }
+    row.trim();
+    int a = row.indexOf('|'), b = row.indexOf('|', a + 1);
+    if (a <= 0 || b < 0) continue;
+    int c = row.indexOf('|', b + 1);
+    strlcpy(stId[stN], row.substring(0, a).c_str(), sizeof(stId[stN]));
+    strlcpy(stName[stN], row.substring(a + 1, b).c_str(), sizeof(stName[stN]));
+    strlcpy(stVer[stN], row.substring(b + 1, c < 0 ? row.length() : c).c_str(), sizeof(stVer[stN]));
+    stCat[stN] = c < 0 ? ST_CAT_N - 1 : storeCatIndex(row.substring(c + 1));
     stN++;
   }
-  storeSort();
-  stTop = 0;
+  stSel = 0;
+  stLevel = SL_CAT;
   stState = ST_LIST;
 }
 
-void storeAct() {  // hold on a row: install / update, or remove when up to date
+void storeNext() {
+  if (stState == ST_ERR) { storeOpen(); return; }
+  int n = storeChoices();
+  if (stState == ST_LIST && n) stSel = (stSel + 1) % n;
+}
+
+void storeSelect() {
+  if (stState == ST_ERR) { storeOpen(); return; }
+  if (stState != ST_LIST || !stN) return;
+  stMsg = "";
+  if (stLevel == SL_CAT) {
+    stCategory = storeCategoryAt(stSel);
+    if (stCategory < 0) return;
+    stSel = 0;
+    stLevel = SL_APP;
+  } else if (stLevel == SL_APP) {
+    stCur = storeAppAt(stSel);
+    if (stCur < 0) return;
+    stLevel = SL_DETAIL;
+    stDesc = "Loading...";
+    stDescPending = true;
+    stReq = millis();
+  } else {
+    stState = ST_BUSY;
+    stReq = millis();
+  }
+}
+
+bool storeBack() {
+  if (stState != ST_LIST || stLevel == SL_CAT) return false;
+  stMsg = "";
+  stDescPending = false;
+  if (stLevel == SL_DETAIL) {
+    stLevel = SL_APP;  // stSel still identifies the app we opened
+    stDesc = "";
+  } else {
+    stLevel = SL_CAT;
+    stSel = 0;
+    for (int c = 0; c < stCategory; c++) if (storeCount(c)) stSel++;
+  }
+  return true;
+}
+
+void storeFetchDesc() {
+  stDescPending = false;
+  stDesc = "";
+  String body;
+  if (httpGetText(String(STORE_URL) + "/apps/" + stId[stCur] + ".js", body, 9000)) {
+    int pos = body.indexOf('\n') + 1;
+    while (pos > 0 && pos < (int)body.length() && stDesc.length() < 48) {
+      int e = body.indexOf('\n', pos);
+      if (e < 0) e = body.length();
+      String row = body.substring(pos, e);
+      pos = e + 1;
+      row.trim();
+      if (!row.startsWith("//")) break;
+      row = row.substring(2);
+      row.trim();
+      if (!row.length()) break;
+      if (stDesc.length()) stDesc += " ";
+      stDesc += row;
+    }
+  }
+  if (!stDesc.length()) stDesc = "No description";
+  if (stDesc.length() > 48) stDesc = stDesc.substring(0, 45) + "...";
+}
+
+void storeAct() {
   int idx = findInstalled(stId[stCur]);
   String path = String("/apps/") + stId[stCur] + ".js";
   if (idx >= 0 && strcmp(instVer[idx], stVer[stCur]) == 0) {
-    LittleFS.remove(path);
-    LittleFS.remove(String("/d_") + stId[stCur] + ".txt");
-    refreshInstalled();
-    stMsg = "Removed";
+    if (LittleFS.remove(path)) {
+      LittleFS.remove(String("/d_") + stId[stCur] + ".txt");
+      refreshInstalled();
+      stMsg = "Removed";
+    } else stMsg = "Remove failed";
+  } else if (idx < 0 && instN >= MAX_INST) {
+    stMsg = "8 apps: remove one";
   } else {
     String body;
     if (!httpGetText(String(STORE_URL) + "/apps/" + stId[stCur] + ".js", body, 9000) || !body.startsWith("//")) {
       stMsg = "Download failed";
     } else {
-      File f = LittleFS.open(path, "w");
-      if (!f) {
-        stMsg = "Flash full?";
-      } else {
-        f.print(body);
+      // Stage the download so a failed write does not destroy an installed app.
+      File f = LittleFS.open("/store.tmp", "w");
+      if (!f) stMsg = "Flash full?";
+      else {
+        size_t written = f.print(body);
         f.close();
-        refreshInstalled();
-        stMsg = "Installed";
+        if (written == body.length() && LittleFS.rename("/store.tmp", path)) {
+          refreshInstalled();
+          stMsg = "Installed";
+        } else {
+          LittleFS.remove("/store.tmp");
+          stMsg = "Install failed";
+        }
       }
     }
   }
@@ -514,71 +578,128 @@ void storeAct() {  // hold on a row: install / update, or remove when up to date
 }
 
 void updateStore() {
-  if (app != APP_STORE || transActive || millis() - stReq < 150) return;  // let one frame draw first
+  if (app != APP_STORE || transActive || millis() - stReq < 150) return;
   if (stState == ST_FETCH) storeFetch();
   else if (stState == ST_BUSY) storeAct();
+  else if (stLevel == SL_DETAIL && stDescPending) storeFetchDesc();
+}
+
+void storeIcon(int x, int y, int cat, uint16_t ink) {
+  if (cat == 1) {  // gamepad
+    display.drawRoundRect(x, y + 2, 11, 7, 2, ink);
+    display.drawLine(x + 2, y + 5, x + 4, y + 5, ink);
+    display.drawLine(x + 3, y + 4, x + 3, y + 6, ink);
+    display.drawPixel(x + 7, y + 4, ink); display.drawPixel(x + 8, y + 6, ink);
+  } else if (cat == 0) {  // wrench
+    display.drawCircle(x + 7, y + 3, 3, ink);
+    display.drawLine(x + 5, y + 5, x + 1, y + 9, ink);
+    display.drawLine(x + 6, y + 6, x + 2, y + 10, ink);
+  } else if (cat == 2) {
+    display.drawCircle(x + 5, y + 6, 4, ink);
+    display.drawLine(x + 5, y + 6, x + 5, y + 3, ink);
+    display.drawLine(x + 3, y, x + 7, y, ink);
+  } else if (cat == 3) {
+    display.drawLine(x + 7, y + 1, x + 7, y + 8, ink);
+    display.drawLine(x + 7, y + 1, x + 10, y + 3, ink);
+    display.fillCircle(x + 5, y + 8, 2, ink);
+  } else {
+    for (int i = 0; i < 4; i++) display.drawRect(x + (i % 2) * 6, y + (i / 2) * 6, 4, 4, ink);
+  }
+}
+
+void storeText(const char* text, int x, int y, int limit) {
+  display.setCursor(x, y);
+  int n = strlen(text);
+  for (int i = 0; i < n && i < limit; i++) display.print(i == limit - 1 && n > limit ? '.' : text[i]);
 }
 
 void drawStore() {
   display.setTextSize(1);
-  display.setCursor(0, 0);
-  display.print("App Store");
-  if (stState == ST_FETCH) { centerText("Loading...", 28, 1); return; }
-  if (stState == ST_BUSY) { centerText("Working...", 28, 1); return; }
-  if (stState == ST_ERR) {
+  display.setTextColor(SSD1306_WHITE);
+  display.setTextWrap(false);
+  String crumb = "appstore";
+  if (stLevel != SL_CAT) crumb += String(">") + ST_CATS[stCategory];
+  // Full app name lives below; shortened path fits the OLED's 21 characters.
+  if (stLevel == SL_DETAIL) crumb = String("store>") + ST_CATS[stCategory] + ">" + stName[stCur];
+  storeText(crumb.c_str(), 0, 0, 21);
+  if (stState == ST_FETCH) centerText("Loading...", 28, 1);
+  else if (stState == ST_BUSY) centerText("Working...", 28, 1);
+  else if (stState == ST_ERR) {
     centerText("Can't reach server", 20, 1);
     centerText("Check Wi-Fi", 32, 1);
-    centerText("Tap: retry", 54, 1);
-    return;
-  }
-  if (stN == 0) { centerText("No apps yet", 28, 1); return; }
-  int idx = findInstalled(stId[stCur]);
-  bool same = idx >= 0 && strcmp(instVer[idx], stVer[stCur]) == 0;
-  const char* hint = same ? "Hold=remove" : (idx >= 0 ? "Hold=update" : "Hold=get");
-  display.setCursor(SCREEN_WIDTH - strlen(hint) * 6, 0);
-  display.print(hint);
-  // 4 rows fit under the title. Category headers take a row of their own, so scroll in
-  // display rows, not app numbers, and keep the selected app (and its header) on screen.
-  if (stTop > stCur) stTop = stCur;
-  while (storeRow(stCur) - storeTopRow() > 3) stTop++;
-  stScroll = smoothTo(stScroll, storeTopRow() * 10);
-  stBar = smoothTo(stBar, storeRow(stCur) * 10);
-  display.fillRect(0, 10 + (int)(stBar - stScroll), SCREEN_WIDTH, 10, SSD1306_WHITE);
-  int row = 0;
-  for (int i = 0; i < stN; i++) {
-    if (i == 0 || stCat[i] != stCat[i - 1]) {  // start of a category: draw its header
-      int hy = 11 + row * 10 - (int)stScroll;
-      if (hy > -8 && hy < 52) {
-        display.setTextColor(SSD1306_WHITE);
-        display.setCursor(4, hy);
-        display.print(ST_CATS[stCat[i]]);
-        int hw = 4 + strlen(ST_CATS[stCat[i]]) * 6 + 4;
-        if (hw < SCREEN_WIDTH - 6) display.drawLine(hw, hy + 3, SCREEN_WIDTH - 4, hy + 3, SSD1306_WHITE);
-      }
-      row++;
+    centerText("Tap: retry", 55, 1);
+  } else if (!stN) centerText("No apps yet", 28, 1);
+  else if (stLevel != SL_DETAIL) {
+    int n = storeChoices(), first = (stSel / 4) * 4;
+    for (int i = first; i < n && i < first + 4; i++) {
+      int x = ((i - first) % 2) * 65, y = 14 + ((i - first) / 2) * 19;
+      bool selected = i == stSel;
+      uint16_t ink = selected ? SSD1306_BLACK : SSD1306_WHITE;
+      if (selected) display.fillRoundRect(x, y, 63, 17, 2, SSD1306_WHITE);
+      else display.drawRoundRect(x, y, 63, 17, 2, SSD1306_WHITE);
+      int item = stLevel == SL_CAT ? storeCategoryAt(i) : storeAppAt(i);
+      int cat = stLevel == SL_CAT ? item : stCat[item];
+      storeIcon(x + 3, y + 3, cat, ink);
+      display.setTextColor(ink);
+      storeText(stLevel == SL_CAT ? ST_CATS[item] : stName[item], x + 17, y + 5, 7);
     }
-    int ty = 11 + row * 10 - (int)stScroll;
-    int appRow = row;
-    row++;
-    if (ty < -8 || ty > 52) continue;
-    bool sel = fabsf(appRow * 10 - stBar) < 5;
-    display.setTextColor(sel ? SSD1306_BLACK : SSD1306_WHITE);
-    display.setCursor(4, ty);
-    display.print(stName[i]);
-    int ii = findInstalled(stId[i]);
-    const char* st = ii < 0 ? "GET" : (strcmp(instVer[ii], stVer[i]) == 0 ? "OK" : "UPD");
-    display.setCursor(SCREEN_WIDTH - 4 - strlen(st) * 6, ty);
-    display.print(st);
+    display.setTextColor(SSD1306_WHITE);
+    char footer[22];
+    snprintf(footer, sizeof(footer), "Hold:open        %d/%d", stSel / 4 + 1, (n + 3) / 4);
+    storeText(footer, 0, 55, 21);
+  } else {
+    int idx = findInstalled(stId[stCur]);
+    const char* action = idx < 0 ? "get" : (strcmp(instVer[idx], stVer[stCur]) == 0 ? "remove" : "update");
+    storeIcon(0, 13, stCat[stCur], SSD1306_WHITE);
+    storeText(stName[stCur], 15, 15, 11);
+    int w = strlen(action) * 6 + 6;
+    display.drawRoundRect(128 - w, 12, w, 13, 2, SSD1306_WHITE);
+    storeText(action, 131 - w, 15, 6);
+    // Three bounded lines leave room for the supplied screenshot/artwork later.
+    int pos = 0;
+    for (int line = 0; line < 3; line++) {
+      int end = min(pos + 16, (int)stDesc.length());
+      if (line < 2 && end < (int)stDesc.length() && stDesc[end] != ' ') {
+        int space = end;
+        while (space > pos && stDesc[space] != ' ') space--;
+        if (space > pos) end = space;
+      }
+      String part = stDesc.substring(pos, end);
+      if (line == 2 && end < (int)stDesc.length()) part = part.substring(0, 13) + "...";
+      storeText(part.c_str(), 0, 29 + line * 8, 16);
+      pos = end;
+      while (pos < (int)stDesc.length() && stDesc[pos] == ' ') pos++;
+    }
+    display.drawRect(101, 29, 27, 23, SSD1306_WHITE);
+    display.drawCircle(108, 35, 2, SSD1306_WHITE);
+    display.drawLine(103, 49, 112, 40, SSD1306_WHITE);
+    display.drawLine(112, 40, 118, 46, SSD1306_WHITE);
+    display.drawLine(118, 46, 123, 41, SSD1306_WHITE);
+    display.drawLine(123, 41, 125, 49, SSD1306_WHITE);
+    // Outline stars mean unrated; there is no ratings service in the catalog.
+    for (int s = 0; s < 5; s++) {
+      int x = s * 7;
+      display.drawLine(x + 3, 55, x + 4, 57, SSD1306_WHITE);
+      display.drawLine(x + 4, 57, x + 6, 57, SSD1306_WHITE);
+      display.drawLine(x + 6, 57, x + 4, 59, SSD1306_WHITE);
+      display.drawLine(x + 4, 59, x + 5, 61, SSD1306_WHITE);
+      display.drawLine(x + 5, 61, x + 3, 60, SSD1306_WHITE);
+      display.drawLine(x + 3, 60, x + 1, 61, SSD1306_WHITE);
+      display.drawLine(x + 1, 61, x + 2, 59, SSD1306_WHITE);
+      display.drawLine(x + 2, 59, x, 57, SSD1306_WHITE);
+      display.drawLine(x, 57, x + 2, 57, SSD1306_WHITE);
+      display.drawLine(x + 2, 57, x + 3, 55, SSD1306_WHITE);
+    }
+    String hint = String("Hold:") + action;
+    storeText(hint.c_str(), 128 - hint.length() * 6, 55, 15);
   }
-  display.setTextColor(SSD1306_WHITE);
-  display.fillRect(0, 0, SCREEN_WIDTH, 10, SSD1306_BLACK);  // clip the scrolling list under the title
-  display.fillRect(0, 52, SCREEN_WIDTH, 12, SSD1306_BLACK);
-  display.setCursor(0, 0);
-  display.print("App Store");
-  display.setCursor(SCREEN_WIDTH - strlen(hint) * 6, 0);
-  display.print(hint);
-  if (stMsg.length() && millis() - stMsgAt < 2500) centerText(stMsg.c_str(), 54, 1);
+  if (stMsg.length() && millis() - stMsgAt < 2500) {
+    display.fillRect(0, 54, 128, 10, SSD1306_BLACK);
+    centerText(stMsg.c_str(), 55, 1);
+  }
+  display.setTextWrap(true);
 }
+
 
 // ---------- Script apps (Elk JavaScript) ----------
 // An app defines any of: draw() each frame, tap() (main button), hold() (main button held),
@@ -1454,6 +1575,7 @@ void startSlide() {
 
 // Apps are loaded when opened and unloaded when closed
 void appLeave(int a) {
+  if (a == APP_STORE) { stDesc = ""; stDescPending = false; }
   if (a == APP_SNAKE) snakeUnload();
   if (a == APP_SCRIPT) scriptUnload();
   if (a == APP_SETTINGS) {
@@ -1519,8 +1641,7 @@ void onShortPress() {
     case APP_HOME: homeSel = (homeSel + 1) % HOME_N; break;
     case APP_SCRIPT: scriptEvent("tap();"); break;
     case APP_STORE:
-      if (stState == ST_LIST && stN) stCur = (stCur + 1) % stN;
-      else if (stState == ST_ERR) storeOpen();
+      storeNext();
       break;
     case APP_SETTINGS:
       if (inMemory) {
@@ -1543,8 +1664,7 @@ void onLongPress() {
     case APP_HOME: openHomeSel(); break;
     case APP_SCRIPT: scriptEvent("hold();"); break;
     case APP_STORE:
-      if (stState == ST_LIST && stN) { stState = ST_BUSY; stReq = millis(); }
-      else if (stState == ST_ERR) storeOpen();
+      storeSelect();
       break;
     case APP_SETTINGS:
       if (inMemory) {
@@ -1564,6 +1684,7 @@ void onLongPress() {
 }
 
 void onHomePress() {
+  if (app == APP_STORE && storeBack()) return;
   if (app == APP_HOME) { onLongPress(); return; }
   goHome();
 }
@@ -1578,9 +1699,7 @@ void extraPress() {
     case APP_SNAKE: snakeTurn(3); break;
     case APP_SCRIPT: scriptEvent("prev();"); break;
     case APP_STORE:
-      if (stState == ST_LIST && stN) stCur = (stCur + stN - 1) % stN;
-      else if (stState == ST_ERR) storeOpen();
-      else goHome();
+      if (!storeBack()) goHome();
       break;
     case APP_SETTINGS:
       if (inMemory) {
