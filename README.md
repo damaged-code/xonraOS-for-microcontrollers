@@ -42,7 +42,7 @@ Buttons use the internal pull-up, so no resistors are needed. A wiring diagram f
 - **Main button (D7):** tap = next / action, hold 0.6 s = select, hold 1.5 s = back to Home.
 - **Second button (D6):** set in Settings > D6 button: Off, Home, or Back (previous item, turn left, jump).
 
-In the ESP8266 Store, a 1.5 s hold goes back one level (details â†’ apps â†’ categories â†’ Home). D6 in Back mode does the same; D6 in Home mode still goes straight Home. Tiles page automatically as you tap through them. Details show the app's leading comment description, an image placeholder, and empty stars (no ratings are collected). Long tile names are shortened; open a tile to see its full catalog name. This layout is available in V2.0.6 / OTA build 8; the Pi Store retains its category list.
+In the ESP8266 Store, a 1.5 s hold goes back one level (details â†’ apps â†’ categories â†’ Home). From V2.0.7 / build 9, D6 in Back mode selects the previous tile or returns from details to the app grid; it stays in the Store during loading or on an empty catalog. D6 in Home mode still goes straight Home. Tiles page automatically as you tap through them. Details show the app's leading comment description, an image placeholder, and empty stars (no ratings are collected). Long tile names are shortened; open a tile to see its full catalog name. This layout is available in V2.0.6 / OTA build 8; the Pi Store retains its category list.
 
 ## Build and flash
 

@@ -34,8 +34,8 @@ extern "C" {
 #include "secrets.h"
 
 // Firmware build number. Raise it for every release you publish (see tools/release-firmware.js).
-const int FW_VERSION = 8;
-const char* FW_VERSION_LABEL = "V2.0.6";
+const int FW_VERSION = 9;
+const char* FW_VERSION_LABEL = "V2.0.7";
 
 // STORE_URL (the app server that serves manifest.txt and apps/<id>.js) comes from secrets.h.
 
@@ -515,6 +515,14 @@ bool storeBack() {
     for (int c = 0; c < stCategory; c++) if (storeCount(c)) stSel++;
   }
   return true;
+}
+
+void storePrevious() {
+  if (stState == ST_ERR) { storeOpen(); return; }
+  if (stState != ST_LIST) return;
+  if (stLevel == SL_DETAIL) { storeBack(); return; }
+  int n = storeChoices();
+  if (n) stSel = (stSel + n - 1) % n;
 }
 
 void storeFetchDesc() {
@@ -1699,7 +1707,7 @@ void extraPress() {
     case APP_SNAKE: snakeTurn(3); break;
     case APP_SCRIPT: scriptEvent("prev();"); break;
     case APP_STORE:
-      if (!storeBack()) goHome();
+      storePrevious();
       break;
     case APP_SETTINGS:
       if (inMemory) {
