@@ -15,7 +15,7 @@ This guide is for people and for AI coding agents. Read the **Elk rules** sectio
 - `Name`: shown in the Store (max 11 characters).
 - `version`: any short text (max 7 characters). **Change it whenever the app changes**, and use the same value in `server/manifest.txt`, or the Store will not offer the update.
 - `Short`: label on the Home tile, max **5 characters** (optional, defaults to Name).
-- `id` is the file name without `.js`: lowercase letters and digits, max 13 characters. It must match the manifest line `id|Name|version`.
+- `id` is the file name without `.js`: lowercase letters and digits, max 13 characters. It must match the manifest line `id|Name|version|Category`.
 - Keep the script under about 6 KB. The engine has a 12 KB heap that holds the code and all variables, and the download limit is 9000 bytes.
 
 Then define any of these global functions (all optional):
@@ -116,6 +116,8 @@ For deterministic time and state assertions, pass a scenario TSV as the second a
 1. Put `<id>.js` in `server/apps/`.
 2. Add or update the line in `server/manifest.txt` and **bump the version**.
 3. On the board: Store, hold the main button on the app (`GET` installs, `UPD` updates).
+
+The manifest line is `id|Name|version|Category`. Use `Tools`, `Games`, `Timers` or `Sound` for the category; anything else (or leaving it out) shows under `Other`. The Store lists the categories in that order and the website shows them as sections.
 
 ## Add a new function to the OS
 

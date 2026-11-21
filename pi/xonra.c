@@ -418,12 +418,37 @@ static void scanApps(void) {
 static int homeN(void) { return 2 + instN; }
 
 // Store
-typedef struct { char id[16], name[16], ver[10]; } Item;
+typedef struct { char id[16], name[16], ver[10]; uint8_t cat; } Item;
 static Item items[24];
 static int itemN = 0, storeSel = 0, storeTop = 0;
 enum { ST_LOAD, ST_LIST, ST_FAIL, ST_BUSY };
 static int storeState = ST_LOAD, busyAt = -1;
 static char storeMsg[24];
+
+// Categories in the order the Store lists them; unknown or missing goes to the last one.
+static const char *storeCats[] = { "Tools", "Games", "Timers", "Sound", "Other" };
+#define STORE_CAT_N ((int)(sizeof storeCats / sizeof storeCats[0]))
+
+static int storeCatIndex(const char *name) {
+  for (int i = 0; i < STORE_CAT_N - 1; i++) if (!strcmp(name, storeCats[i])) return i;
+  return STORE_CAT_N - 1;
+}
+static void storeSort(void) {  // group by category; the manifest order is kept inside a group
+  for (int i = 1; i < itemN; i++)
+    for (int j = i; j > 0 && items[j - 1].cat > items[j].cat; j--) {
+      Item t = items[j - 1]; items[j - 1] = items[j]; items[j] = t;
+    }
+}
+static int storeRow(int i) {  // display row of app i: the first group's header always takes row 0
+  int r = i + 1;
+  for (int k = 1; k <= i; k++) if (items[k].cat != items[k - 1].cat) r++;
+  return r;
+}
+static int storeTopRow(void) {  // first row shown; start on the group's header when that is where storeTop is
+  int r = storeRow(storeTop);
+  if (storeTop == 0 || items[storeTop].cat != items[storeTop - 1].cat) r--;
+  return r < 0 ? 0 : r;
+}
 
 static const char *itemStatus(int i) {
   for (int k = 0; k < instN; k++)
@@ -441,12 +466,16 @@ static void storeFetchList(void) {
     l[strcspn(l, "\r")] = 0;
     char *b1 = strchr(l, '|'), *b2 = b1 ? strchr(b1 + 1, '|') : NULL;
     if (!b2) continue;
+    char *b3 = strchr(b2 + 1, '|');  // category is optional
     *b1 = 0; *b2 = 0;
+    if (b3) *b3 = 0;
     snprintf(items[itemN].id, sizeof items[0].id, "%s", l);
     snprintf(items[itemN].name, sizeof items[0].name, "%s", b1 + 1);
     snprintf(items[itemN].ver, sizeof items[0].ver, "%s", b2 + 1);
+    items[itemN].cat = b3 ? storeCatIndex(b3 + 1) : STORE_CAT_N - 1;
     itemN++;
   }
+  storeSort();
   scanApps();
   storeState = itemN ? ST_LIST : ST_FAIL;
   if (!itemN) snprintf(storeMsg, sizeof storeMsg, "Store is empty");
@@ -560,9 +589,21 @@ static void drawStore(void) {
     return;
   }
   if (storeSel < storeTop) storeTop = storeSel;
-  if (storeSel > storeTop + 3) storeTop = storeSel - 3;
-  for (int r = 0; r < 4 && storeTop + r < itemN; r++) {
-    int i = storeTop + r, y = 11 + r * 11;
+  while (storeRow(storeSel) - storeTopRow() > 3) storeTop++;
+  int top = storeTopRow(), row = 0;
+  for (int i = 0; i < itemN; i++) {
+    if (i == 0 || items[i].cat != items[i - 1].cat) {  // start of a category: draw its header
+      int hy = 11 + (row - top) * 11;
+      if (hy >= 11 && hy <= 44) {
+        gtext(2, hy, 1, storeCats[items[i].cat], 1);
+        int hw = 2 + (int)strlen(storeCats[items[i].cat]) * 6 + 4;
+        if (hw < W - 4) fillrect(hw, hy + 3, W - 4 - hw, 1, 1);
+      }
+      row++;
+    }
+    int y = 11 + (row - top) * 11;
+    row++;
+    if (y < 11 || y > 44) continue;
     if (i == storeSel) fillrect(0, y - 1, W, 10, 1);
     gtext(2, y, 1, items[i].name, i != storeSel);
     const char *st = itemStatus(i);

@@ -104,7 +104,7 @@ let draw = function() {
 let tap = function() { n = n + 1; };
 ```
 
-Save it as `server/apps/hello.js`, add `hello|Hello|1` to `server/manifest.txt`, and install it from the Store. Read [docs/APPS.md](docs/APPS.md) first: the script engine has some bugs that fail silently, and there is a test harness (`tools/harness.c`) to check your app on your computer.
+Save it as `server/apps/hello.js`, add `hello|Hello|1|Tools` to `server/manifest.txt`, and install it from the Store. Read [docs/APPS.md](docs/APPS.md) first: the script engine has some bugs that fail silently, and there is a test harness (`tools/harness.c`) to check your app on your computer.
 
 ## Repository layout
 

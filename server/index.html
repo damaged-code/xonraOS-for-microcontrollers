@@ -27,6 +27,12 @@
   code { background: var(--code); padding: 1px 5px; border-radius: 4px; font-size: .92em; }
   a { color: var(--accent); }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 18px; }
+  .cats { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 18px; }
+  .chip { border-radius: 999px; padding: 5px 13px; }
+  .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+  .sec { grid-column: 1 / -1; margin: 6px 0 -4px; display: flex; align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .sec::after { content: ''; flex: 1; height: 1px; background: var(--line); }
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
   .screen { background: var(--screen); border-radius: 8px; padding: 8px; }
   canvas { display: block; width: 100%; height: auto; aspect-ratio: 2 / 1; image-rendering: pixelated; background: var(--screen); border-radius: 4px; }
@@ -64,13 +70,15 @@
     </ol>
   </section>
 
+  <nav class="cats" id="cats" aria-label="Filter by category"></nav>
+
   <section class="grid" id="grid" aria-live="polite"><p>Loading apps…</p></section>
 
   <p class="note">The preview approximates the 128×64 screen in your browser: fonts and timing differ a little from the real board. Buttons: <b>Tap</b> and <b>Hold</b> are the main button, <b>D6</b> is the second button, and the slider is the knob.</p>
 
   <footer>
     Open source: <a href="https://github.com/damaged-code/xonraOS-for-microcontrollers">github.com/damaged-code/xonraOS-for-microcontrollers</a>.
-    Want your app here? Open a pull request that adds <code>server/apps/&lt;id&gt;.js</code> and a line in <code>server/manifest.txt</code>.
+    Want your app here? Open a pull request that adds <code>server/apps/&lt;id&gt;.js</code> and a line in <code>server/manifest.txt</code> with its category.
     Apps are reviewed before they are merged, but only install apps you trust.
   </footer>
 </main>
@@ -164,6 +172,7 @@
       '<details><summary>View code</summary><pre></pre></details>';
     el.querySelector('h3').textContent = entry.name;
     el.querySelector('.ver').textContent = 'v' + entry.ver + ' · ' + entry.id;
+    el.dataset.cat = entry.cat || 'Other';
     el.querySelector('.desc').textContent = desc;
     el.querySelector('pre').textContent = code;
     const href = 'apps/' + entry.id + '.js';
@@ -207,7 +216,7 @@
     } catch (e) { /* fall through */ }
     const manifest = await (await fetch('manifest.txt', { cache: 'no-cache' })).text();
     const entries = manifest.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
-      const p = l.split('|'); return { id: p[0], name: p[1] || p[0], ver: p[2] || '1' };
+      const p = l.split('|').map(s => s.trim()); return { id: p[0], name: p[1] || p[0], ver: p[2] || '1', cat: p[3] || 'Other' };
     }).filter(e => /^[a-z0-9]+$/.test(e.id));
     const apps = await Promise.all(entries.map(async e => {
       try { return Object.assign(e, { code: await (await fetch('apps/' + e.id + '.js')).text() }); } catch (err) { return null; }
@@ -215,13 +224,63 @@
     return apps.filter(Boolean);
   }
 
+  // Apps are grouped into the categories used by the Store, in the same order.
+  const CATS = ['Tools', 'Games', 'Timers', 'Sound', 'Other'];
+
+  function render(apps) {
+    grid.innerHTML = '';
+    const groups = new Map();
+    for (const a of apps) {
+      a.cat = CATS.includes(a.cat) ? a.cat : 'Other';
+      if (!groups.has(a.cat)) groups.set(a.cat, []);
+      groups.get(a.cat).push(a);
+    }
+    const order = CATS.filter(c => groups.has(c));
+    if (order.length < 2) {  // only one category: no chips or headings needed
+      for (const a of groups.get(order[0])) grid.appendChild(card(a, a.code));
+      return;
+    }
+    const nav = document.getElementById('cats');
+    nav.innerHTML = '';
+    const chips = [];
+    const heads = [];
+    for (const c of order) {
+      const h = document.createElement('h2');
+      h.className = 'sec';
+      h.dataset.cat = c;
+      h.textContent = c + ' · ' + groups.get(c).length;
+      grid.appendChild(h);
+      heads.push(h);
+      for (const a of groups.get(c)) grid.appendChild(card(a, a.code));
+    }
+    const apply = cat => {
+      for (const h of heads) h.style.display = !cat || h.dataset.cat === cat ? '' : 'none';
+      for (const el of grid.children) {
+        if (el.classList.contains('sec')) continue;
+        el.style.display = !cat || el.dataset.cat === cat ? '' : 'none';
+      }
+      for (const b of chips) b.setAttribute('aria-pressed', String(b.dataset.cat === cat));
+    };
+    const addChip = (label, cat) => {
+      const b = document.createElement('button');
+      b.className = 'chip';
+      b.textContent = label;
+      b.dataset.cat = cat;
+      b.setAttribute('aria-pressed', String(cat === ''));
+      b.addEventListener('click', () => apply(cat));
+      nav.appendChild(b);
+      chips.push(b);
+    };
+    addChip('All', '');
+    for (const c of order) addChip(c, c);
+  }
+
   async function main() {
     let apps;
     try { apps = await loadCatalog(); }
     catch (e) { grid.innerHTML = '<p class="err">Could not load the app list.</p>'; return; }
-    grid.innerHTML = '';
     if (!apps.length) { grid.innerHTML = '<p>No apps yet.</p>'; return; }
-    for (const a of apps) grid.appendChild(card(a, a.code));
+    render(apps);
   }
   main();
 })();

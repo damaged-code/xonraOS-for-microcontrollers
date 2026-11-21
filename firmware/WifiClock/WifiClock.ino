@@ -34,8 +34,8 @@ extern "C" {
 #include "secrets.h"
 
 // Firmware build number. Raise it for every release you publish (see tools/release-firmware.js).
-const int FW_VERSION = 6;
-const char* FW_VERSION_LABEL = "V2.0.4";
+const int FW_VERSION = 7;
+const char* FW_VERSION_LABEL = "V2.0.5";
 
 // STORE_URL (the app server that serves manifest.txt and apps/<id>.js) comes from secrets.h.
 
@@ -400,11 +400,47 @@ bool httpGetText(const String& url, String& out, size_t maxLen) {
 void goHome();
 enum StoreState { ST_FETCH, ST_LIST, ST_BUSY, ST_ERR };
 const int ST_MAX = 24;  // Store catalog capacity; installed-app limit remains separate.
-int stState = ST_FETCH, stCur = 0, stN = 0;
+int stState = ST_FETCH, stCur = 0, stN = 0, stTop = 0;
 unsigned long stReq = 0, stMsgAt = 0;
 char stId[ST_MAX][14], stName[ST_MAX][12], stVer[ST_MAX][8];
+uint8_t stCat[ST_MAX];  // category of each app, an index into ST_CATS
 String stMsg;
 float stScroll = 0, stBar = 0;  // list scroll and highlight positions in pixels, animated
+
+// Categories in the order the Store lists them. A missing or unknown category goes to "Other".
+const int ST_CAT_N = 5;
+const char* ST_CATS[ST_CAT_N] = { "Tools", "Games", "Timers", "Sound", "Other" };
+
+int storeCatIndex(String name) {
+  name.trim();
+  for (int i = 0; i < ST_CAT_N - 1; i++) if (name.equalsIgnoreCase(ST_CATS[i])) return i;
+  return ST_CAT_N - 1;
+}
+
+void storeSwap(int a, int b) {
+  char t[14];
+  strlcpy(t, stId[a], sizeof(stId[a])); strlcpy(stId[a], stId[b], sizeof(stId[b])); strlcpy(stId[b], t, sizeof(stId[b]));
+  strlcpy(t, stName[a], sizeof(stName[a])); strlcpy(stName[a], stName[b], sizeof(stName[b])); strlcpy(stName[b], t, sizeof(stName[b]));
+  strlcpy(t, stVer[a], sizeof(stVer[a])); strlcpy(stVer[a], stVer[b], sizeof(stVer[b])); strlcpy(stVer[b], t, sizeof(stVer[b]));
+  uint8_t c = stCat[a]; stCat[a] = stCat[b]; stCat[b] = c;
+}
+
+void storeSort() {  // group apps by category; the manifest order is kept inside each group
+  for (int i = 1; i < stN; i++)
+    for (int j = i; j > 0 && stCat[j - 1] > stCat[j]; j--) storeSwap(j - 1, j);
+}
+
+int storeRow(int i) {  // display row of app i: the first group's header always takes row 0
+  int r = i + 1;
+  for (int k = 1; k <= i; k++) if (stCat[k] != stCat[k - 1]) r++;
+  return r;
+}
+
+int storeTopRow() {  // first row shown; start on the group's header when that is where stTop is
+  int r = storeRow(stTop);
+  if (stTop == 0 || stCat[stTop] != stCat[stTop - 1]) r--;
+  return r < 0 ? 0 : r;
+}
 
 void storeOpen() {
   stScroll = 0;
@@ -412,11 +448,12 @@ void storeOpen() {
   stState = ST_FETCH;
   stReq = millis();
   stCur = 0;
+  stTop = 0;
   stN = 0;
   stMsg = "";
 }
 
-void storeFetch() {  // manifest.txt lines: id|Name|version
+void storeFetch() {  // manifest.txt lines: id|Name|version|Category  (Category is optional)
   String body;
   if (!httpGetText(String(STORE_URL) + "/manifest.txt", body, 2000)) { stState = ST_ERR; return; }
   stN = 0;
@@ -431,11 +468,20 @@ void storeFetch() {  // manifest.txt lines: id|Name|version
     if (a <= 0) continue;
     int b = line.indexOf('|', a + 1);
     if (b < 0) continue;
+    int c = line.indexOf('|', b + 1);
     strlcpy(stId[stN], line.substring(0, a).c_str(), sizeof(stId[stN]));
     strlcpy(stName[stN], line.substring(a + 1, b).c_str(), sizeof(stName[stN]));
-    strlcpy(stVer[stN], line.substring(b + 1).c_str(), sizeof(stVer[stN]));
+    if (c < 0) {  // line from an older manifest: no category
+      strlcpy(stVer[stN], line.substring(b + 1).c_str(), sizeof(stVer[stN]));
+      stCat[stN] = ST_CAT_N - 1;
+    } else {
+      strlcpy(stVer[stN], line.substring(b + 1, c).c_str(), sizeof(stVer[stN]));
+      stCat[stN] = storeCatIndex(line.substring(c + 1));
+    }
     stN++;
   }
+  storeSort();
+  stTop = 0;
   stState = ST_LIST;
 }
 
@@ -491,14 +537,31 @@ void drawStore() {
   const char* hint = same ? "Hold=remove" : (idx >= 0 ? "Hold=update" : "Hold=get");
   display.setCursor(SCREEN_WIDTH - strlen(hint) * 6, 0);
   display.print(hint);
-  int top = stCur > 3 ? stCur - 3 : 0;  // 4 rows visible, the last line shows messages
-  stScroll = smoothTo(stScroll, top * 10);
-  stBar = smoothTo(stBar, stCur * 10);
+  // 4 rows fit under the title. Category headers take a row of their own, so scroll in
+  // display rows, not app numbers, and keep the selected app (and its header) on screen.
+  if (stTop > stCur) stTop = stCur;
+  while (storeRow(stCur) - storeTopRow() > 3) stTop++;
+  stScroll = smoothTo(stScroll, storeTopRow() * 10);
+  stBar = smoothTo(stBar, storeRow(stCur) * 10);
   display.fillRect(0, 10 + (int)(stBar - stScroll), SCREEN_WIDTH, 10, SSD1306_WHITE);
+  int row = 0;
   for (int i = 0; i < stN; i++) {
-    int ty = 11 + i * 10 - (int)stScroll;
+    if (i == 0 || stCat[i] != stCat[i - 1]) {  // start of a category: draw its header
+      int hy = 11 + row * 10 - (int)stScroll;
+      if (hy > -8 && hy < 52) {
+        display.setTextColor(SSD1306_WHITE);
+        display.setCursor(4, hy);
+        display.print(ST_CATS[stCat[i]]);
+        int hw = 4 + strlen(ST_CATS[stCat[i]]) * 6 + 4;
+        if (hw < SCREEN_WIDTH - 6) display.drawLine(hw, hy + 3, SCREEN_WIDTH - 4, hy + 3, SSD1306_WHITE);
+      }
+      row++;
+    }
+    int ty = 11 + row * 10 - (int)stScroll;
+    int appRow = row;
+    row++;
     if (ty < -8 || ty > 52) continue;
-    bool sel = fabsf(i * 10 - stBar) < 5;
+    bool sel = fabsf(appRow * 10 - stBar) < 5;
     display.setTextColor(sel ? SSD1306_BLACK : SSD1306_WHITE);
     display.setCursor(4, ty);
     display.print(stName[i]);

@@ -5,7 +5,7 @@ The board's **Store** app downloads apps from a plain web server. No special sof
 ```
 server/
   index.html       the website that lists the apps with live previews
-  manifest.txt     one line per app:  id|Name|version
+  manifest.txt     one line per app:  id|Name|version|Category
   apps/<id>.js     the apps (first line is the header //Name|version|Short)
   notes.txt        used by the Notes sample app
 ```
@@ -27,10 +27,12 @@ For an always-on server, run the same command on a Raspberry Pi, a home server o
 ## Add or update an app
 
 1. Put `<id>.js` in `apps/` (see `../docs/APPS.md` for how to write one).
-2. Add a line to `manifest.txt`: `id|Name|version`.
+2. Add a line to `manifest.txt`: `id|Name|version|Category`.
 3. On the board: Store, find the app, hold the main button. `GET` installs, `UPD` updates, `OK` removes.
 
 **Bump the version in both the app header and the manifest every time you change an app**, or the board will not offer the update.
+
+`Category` is `Tools`, `Games`, `Timers` or `Sound` (anything else, or leaving it out, puts the app under `Other`). The Store groups apps under those headings and the website shows them as sections. Firmware older than V2.0.5 ignores the fourth field and shows one flat list.
 
 ## Security
 

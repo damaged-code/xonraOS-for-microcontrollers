@@ -1,16 +1,16 @@
-counter|Counter|3
-stopwatch|Stopwatch|4
-notes|Notes|6
-knobtest|Knob Test|2
-bounce|Bounce|3
-calculator|Calculator|6
-countdown|Countdown|1
-focus|Focus|1
-breathe|Breathe|1
-dice|Dice|1
-reaction|Reaction|1
-mathquiz|Math Quiz|1
-scoreboard|Scoreboard|1
-metronome|Metronome|1
-morse|Morse|1
-lanedodge|Lane Dodge|1
+counter|Counter|3|Tools
+stopwatch|Stopwatch|4|Tools
+notes|Notes|6|Tools
+calculator|Calculator|6|Tools
+knobtest|Knob Test|2|Tools
+bounce|Bounce|3|Games
+dice|Dice|1|Games
+reaction|Reaction|1|Games
+mathquiz|Math Quiz|1|Games
+scoreboard|Scoreboard|1|Games
+lanedodge|Lane Dodge|1|Games
+countdown|Countdown|1|Timers
+focus|Focus|1|Timers
+breathe|Breathe|1|Timers
+metronome|Metronome|1|Sound
+morse|Morse|1|Sound
