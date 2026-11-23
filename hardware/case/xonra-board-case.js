@@ -94,9 +94,9 @@ const PARTS = [
   ['J1', 'USB-C', 14, 3.2, 9, 7.4, 3.2, '#c0c0c0'],
   ['U2', 'CH340C', 16, 60, 10, 6, 1.75, '#222222'],
   ['U3', 'AMS1117', 40, 60, 6.5, 7, 1.8, '#222222'],
-  ['U1', 'ESP-12F', 48, 14, 24, 16, 3.2, '#b8b8b8'],   // turned sideways, antenna on the right edge
-  ['SW2', 'D6', 19, 30, 12, 12, 5, '#333333'],          // 12x12x5 mm tactile switches under big printed caps
-  ['SW1', 'D7', 41, 30, 12, 12, 5, '#333333'],
+  ['U1', 'ESP-12F', 47, 14.8, 24, 16, 3.2, '#b8b8b8'],   // turned sideways, antenna on the right edge
+  ['SW2', 'D6', 19, 31.5, 12, 12, 5, '#333333'],          // 12x12x5 mm tactile switches under big printed caps
+  ['SW1', 'D7', 41, 31.5, 12, 12, 5, '#333333'],
   ['SW3', 'RST', 24, 12, 4, 3, 2.5, '#444444'],
   ['SW4', 'FLASH', 30, 12, 4, 3, 2.5, '#444444'],
   ['LS1', 'Buzzer', 10, 18, 5, 5, 2, '#111111'],
