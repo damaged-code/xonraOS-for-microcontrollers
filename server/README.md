@@ -18,7 +18,7 @@ From this `server/` folder:
 python -m http.server 8266
 ```
 
-(`python3` on Linux and macOS.) Then put the computer's address in `firmware/WifiClock/secrets.h`, for example `#define STORE_URL "http://192.168.1.50:8266"`, and flash the firmware. Find the address with `ipconfig` (Windows) or `ip addr` / `ifconfig`. The board and the computer must be on the same network, and the computer's firewall must allow port 8266.
+(`python3` on Linux and macOS.) Then put the computer's address in `firmware/xonraOS/secrets.h`, for example `#define STORE_URL "http://192.168.1.50:8266"`, and flash the firmware. Find the address with `ipconfig` (Windows) or `ip addr` / `ifconfig`. The board and the computer must be on the same network, and the computer's firewall must allow port 8266.
 
 Check it from a browser: `http://<address>:8266/manifest.txt` should show the list.
 

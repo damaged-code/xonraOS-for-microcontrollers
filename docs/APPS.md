@@ -121,4 +121,4 @@ The manifest line is `id|Name|version|Category`. Use `Tools`, `Games`, `Timers` 
 
 ## Add a new function to the OS
 
-If an app needs something the API lacks (a new sensor, for example), add a C function in `firmware/WifiClock/WifiClock.ino` and register it in `scriptLoad()` with `reg("name", (uintptr_t)fn, "signature")`. The signature's first letter is the return type, then the argument types: `i` integer, `s` string, `v` void. Use only `i`, `s` and `v`: doubles break Elk's call convention on this chip. Then add it to the harness and to this document, and reflash the firmware.
+If an app needs something the API lacks (a new sensor, for example), add a C function in `firmware/xonraOS/xonraOS.ino` and register it in `scriptLoad()` with `reg("name", (uintptr_t)fn, "signature")`. The signature's first letter is the return type, then the argument types: `i` integer, `s` string, `v` void. Use only `i`, `s` and `v`: doubles break Elk's call convention on this chip. Then add it to the harness and to this document, and reflash the firmware.

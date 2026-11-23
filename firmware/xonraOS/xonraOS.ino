@@ -181,7 +181,7 @@ int* scanPct = nullptr;
 int scanN = 0;
 ESP8266WebServer* web = nullptr;
 DNSServer* dnsSrv = nullptr;
-const char* AP_NAME = "ESP-Clock-Setup";
+const char* AP_NAME = "xonraOS-Setup";
 const char* AP_PASS = "esp12345";
 
 // Snake (32 x 13 grid of 4-pixel cells, edges wrap around). Buffers exist only while the app is open.
@@ -1088,7 +1088,7 @@ void drawSnake() {
   }
 }
 
-// ---------- Wi-Fi setup (inside Settings; phone opens a page on the clock's own network) ----------
+// ---------- Wi-Fi setup (inside Settings; phone opens a page on the device's own network) ----------
 String htmlEsc(const String& s) {
   String o;
   for (unsigned i = 0; i < s.length(); i++) {
@@ -1129,7 +1129,7 @@ void doScan() {
 }
 
 void portalPage() {
-  String h = F("<!DOCTYPE html><html><head><meta name=viewport content='width=device-width,initial-scale=1'><title>Clock Wi-Fi</title><style>body{font-family:sans-serif;margin:16px;max-width:420px}input,select,button{width:100%;padding:12px;margin:6px 0;font-size:16px;box-sizing:border-box}button{background:#0a7;color:#fff;border:0;border-radius:6px}</style></head><body><h2>Clock Wi-Fi setup</h2>");
+  String h = F("<!DOCTYPE html><html><head><meta name=viewport content='width=device-width,initial-scale=1'><title>xonraOS Wi-Fi</title><style>body{font-family:sans-serif;margin:16px;max-width:420px}input,select,button{width:100%;padding:12px;margin:6px 0;font-size:16px;box-sizing:border-box}button{background:#0a7;color:#fff;border:0;border-radius:6px}</style></head><body><h2>xonraOS Wi-Fi setup</h2>");
   if (netMsg.length()) h += "<p><b>" + htmlEsc(netMsg) + "</b></p>";
   h += F("<form method=POST action=/save><label>Pick your network</label><select name=s>");
   for (int i = 0; i < scanN; i++) {
@@ -1155,7 +1155,7 @@ void portalSave() {
   netState = N_TRYING;
   netT = millis();
   netMsg = "";
-  web->send(200, "text/html", F("<html><head><meta name=viewport content='width=device-width,initial-scale=1'></head><body style='font-family:sans-serif;margin:16px'><h2>Connecting...</h2><p>Watch the clock's screen. When it says Connected, this setup network switches off.</p></body></html>"));
+  web->send(200, "text/html", F("<html><head><meta name=viewport content='width=device-width,initial-scale=1'></head><body style='font-family:sans-serif;margin:16px'><h2>Connecting...</h2><p>Watch the xonraOS screen. When it says Connected, this setup network switches off.</p></body></html>"));
 }
 
 void startPortal() {

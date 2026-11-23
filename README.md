@@ -42,18 +42,18 @@ Buttons use the internal pull-up, so no resistors are needed. A wiring diagram f
 - **Main button (D7):** tap = next / action, hold 0.6 s = select, hold 1.5 s = back to Home.
 - **Second button (D6):** set in Settings > D6 button: Off, Home, or Back (previous item, turn left, jump).
 
-In the ESP8266 Store, a 1.5 s hold goes back one level (details â†’ apps â†’ categories â†’ Home). From V2.0.7 / build 9, D6 in Back mode selects the previous tile or returns from details to the app grid; it stays in the Store during loading or on an empty catalog. D6 in Home mode still goes straight Home. Tiles page automatically as you tap through them. Details show the app's leading comment description, an image placeholder, and empty stars (no ratings are collected). Long tile names are shortened; open a tile to see its full catalog name. This layout is available in V2.0.6 / OTA build 8; the Pi Store retains its category list.
+In the ESP8266 Store, a 1.5 s hold goes back one level (details → apps → categories → Home). From V2.0.7 / build 9, D6 in Back mode selects the previous tile or returns from details to the app grid; it stays in the Store during loading or on an empty catalog. D6 in Home mode still goes straight Home. Tiles page automatically as you tap through them. Details show the app's leading comment description, an image placeholder, and empty stars (no ratings are collected). Long tile names are shortened; open a tile to see its full catalog name. This layout is available in V2.0.6 / OTA build 8; the Pi Store retains its category list.
 
 ## Build and flash
 
 1. Install the [Arduino IDE](https://www.arduino.cc/en/software) or Arduino CLI, and the **esp8266** board package (3.1.2 was used).
 2. Install the libraries **Adafruit SSD1306**, **Adafruit GFX Library** (with Adafruit BusIO) and **elk** (2.2.0) from the Library Manager.
-3. Copy `firmware/WifiClock/secrets.example.h` to `secrets.h` in the same folder and fill in your Wi-Fi name, password and app server address. (The ESP8266 supports 2.4 GHz Wi-Fi only.)
-4. Edit `TIME_ZONE` near the top of `WifiClock.ino` if you are not in UTC+3.
+3. Copy `firmware/xonraOS/secrets.example.h` to `secrets.h` in the same folder and fill in your Wi-Fi name, password and app server address. (The ESP8266 supports 2.4 GHz Wi-Fi only.)
+4. Edit `TIME_ZONE` near the top of `xonraOS.ino` if you are not in UTC+3.
 5. Board: **NodeMCU 1.0 (ESP-12E Module)**. Compile and upload, for example:
 
 ```
-arduino-cli compile --upload -p COM5 --fqbn esp8266:esp8266:nodemcuv2 firmware/WifiClock
+arduino-cli compile --upload -p COM5 --fqbn esp8266:esp8266:nodemcuv2 firmware/xonraOS
 ```
 
 If an upload fails with a write error, try again. If the board is not detected, install the CP210x USB driver.
@@ -62,12 +62,12 @@ If an upload fails with a write error, try again. If the board is not detected, 
 
 Open **Settings > Firmware** on the board. It shows the installed build (for example `v2`) and the latest one on your app server. If a newer one exists, hold the main button to install it. The board downloads it, checks its signature, reboots and runs it. Do not unplug it while it says "Updating...".
 
-Safety: the board only installs builds **signed with the maintainer's private key**; the matching public key is built into the firmware (`firmware/WifiClock/public.key`). A tampered or unsigned file is refused. Anyone with a USB cable can still flash any firmware.
+Safety: the board only installs builds **signed with the maintainer's private key**; the matching public key is built into the firmware (`firmware/xonraOS/public.key`). A tampered or unsigned file is refused. Anyone with a USB cable can still flash any firmware.
 
 For maintainers (publishing a release):
-1. Raise `FW_VERSION` in `WifiClock.ino`.
-2. Build: `arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 --output-dir build firmware/WifiClock`
-3. Sign: `node tools/release-firmware.js build/WifiClock.ino.bin <path to private.key> release`
+1. Raise `FW_VERSION` in `xonraOS.ino`.
+2. Build: `arduino-cli compile --fqbn esp8266:esp8266:nodemcuv2 --output-dir build firmware/xonraOS`
+3. Sign: `node tools/release-firmware.js build/xonraOS.ino.bin <path to private.key> release`
 4. Copy `release/xonraos.bin` and `release/version.txt` to `firmware/` on your app server (so they are served at `/firmware/xonraos.bin` and `/firmware/version.txt`).
 
 To run your own releases, make your own key pair (see the comments in `tools/release-firmware.js`), replace `public.key`, flash once over USB, and sign with your private key. Never commit `private.key`.
@@ -111,8 +111,9 @@ Save it as `server/apps/hello.js`, add `hello|Hello|1|Tools` to `server/manifest
 ## Repository layout
 
 ```
-firmware/WifiClock/   the OS (Arduino sketch)  - GPL-3.0
+firmware/xonraOS/   the OS (Arduino sketch)  - GPL-3.0
 server/               app server files and sample apps - MIT
+hardware/             open board design (draft) - CERN-OHL-S-2.0
 pi/                   Raspberry Pi 3B version (same apps) - GPL-3.0
 tools/harness.c       test an app on your computer
 docs/                 app guide and wiring diagram

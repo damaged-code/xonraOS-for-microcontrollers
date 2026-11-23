@@ -1,5 +1,5 @@
 # Private Wi-Fi details
-firmware/WifiClock/secrets.h
+firmware/xonraOS/secrets.h
 
 # Build output
 *.bin
@@ -17,4 +17,5 @@ catalog.json
 # Signing keys (never commit the private key)
 private.key
 *.key
-!firmware/WifiClock/public.key
+!firmware/xonraOS/public.key
+firmware/xonraOS_TFT/secrets.h

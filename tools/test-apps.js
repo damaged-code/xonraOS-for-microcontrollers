@@ -45,7 +45,7 @@ try {
     run(id, 'buttons and redraw', [[1000, 'draw();'], [1200, 'tap();'], [1300, 'draw();'], [2000, 'hold();'], [2100, 'draw();'], [2200, 'prev();'], [2300, 'draw();']]);
   }
   assert.equal(new Set(entries.map(e => e[0])).size, entries.length);
-  const firmware = fs.readFileSync(path.join(root, 'firmware/WifiClock/WifiClock.ino'), 'utf8');
+  const firmware = fs.readFileSync(path.join(root, 'firmware/xonraOS/xonraOS.ino'), 'utf8');
   assert.ok(entries.length <= +firmware.match(/const int ST_MAX = (\d+)/)[1]);
   assert.ok(fs.statSync(path.join(root, 'server/manifest.txt')).size < 2000);
 
