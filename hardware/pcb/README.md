@@ -22,7 +22,7 @@ Everything is in `production/`:
 In the assembly preview, **check the rotation of each part** (especially U1, U2, U3, the transistors and J1)
 and rotate any that look wrong: the factory's part models do not always match KiCad's.
 
-Solder these yourself afterwards: the 1.8" TFT module (on J2, 8-pin header), the two 12 × 12 mm buttons (SW1, SW2),
+Solder these yourself afterwards (then trim all solder legs to about 1.5 mm so the board fits the thin case): the 1.8" TFT module (on J2, 8-pin header), the two low-profile 12 × 12 × 4.3 mm buttons (SW1, SW2),
 the 5 × 5 mm buzzer (LS1) and the flat 16 mm thumbwheel potentiometer (RV1).
 
 ## What to check before ordering

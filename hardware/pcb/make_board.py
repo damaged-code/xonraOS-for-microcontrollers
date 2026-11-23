@@ -34,7 +34,7 @@ PARTS = {
     "Q2":  ("Package_TO_SOT_SMD", "SOT-23", 33, 46, 0, "S8050", "C2146"),
     "Q3":  ("Package_TO_SOT_SMD", "SOT-23", 5, 12, 0, "S8050", "C2146"),
     "D1":  ("Diode_SMD", "D_SOD-123", 10, 12.5, 0, "1N4148W", "C81598"),
-    "D2":  ("LED_SMD", "LED_0603_1608Metric", 24, 3, 0, "LED", "C72043"),
+    "D2":  ("LED_SMD", "LED_0603_1608Metric", 24, 3, 0, "LED", "C12624"),
     "R1":  ("Resistor_SMD", "R_0603_1608Metric", 50.5, 25.5, 0, "10k", "C25804"),
     "R2":  ("Resistor_SMD", "R_0603_1608Metric", 53.5, 25.5, 0, "10k", "C25804"),
     "R3":  ("Resistor_SMD", "R_0603_1608Metric", 56.5, 25.5, 0, "10k", "C25804"),

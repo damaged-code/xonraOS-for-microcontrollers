@@ -1,6 +1,6 @@
 # xonraOS board (open hardware)
 
-> **Current design: [pcb/](pcb/README.md)** — v0.2, 1.8" colour TFT, routed KiCad board with JLCPCB production files. The text below describes the earlier v0.1 draft (0.96" OLED) and is kept for reference.
+> **Current design: [carrier/](carrier/README.md)** — v0.3, low-cost board for a Wemos D1 mini, hand-soldered, fits the case. The factory-assembled v0.2 board is in [pcb/](pcb/README.md). The text below describes the earlier v0.1 draft (0.96" OLED) and is kept for reference.
 
 A single board that runs the xonraOS firmware with no breadboard: ESP8266, USB-C, a 0.96" OLED, two buttons, a buzzer and a knob. It is pin-compatible with the NodeMCU wiring the firmware already uses, so **the same firmware runs unchanged**.
 

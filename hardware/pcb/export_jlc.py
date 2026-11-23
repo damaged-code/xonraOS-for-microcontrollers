@@ -33,12 +33,16 @@ pos = os.path.join(OUT, "_pos.csv")
 subprocess.run([CLI, "pcb", "export", "pos", "--format", "csv", "--units", "mm", "--side", "both",
                 "--exclude-dnp", "-o", pos, PCB], check=True)
 machine = {ref for ref, p in PARTS.items() if p[6]}  # parts with an LCSC number are machine-assembled
+# JLCPCB's 3D models are rotated differently from KiCad's for some parts. Found in JLC's placement viewer
+# (Nov 2026): the ESP-12F needed +90 degrees. JLC's engineers still check placement when "Confirm Parts Placement" is on.
+JLC_ROT_FIX = {"U1": 90}
 with open(pos, newline="") as f, open(os.path.join(OUT, "cpl.csv"), "w", newline="") as g:
     w = csv.writer(g)
     w.writerow(["Designator", "Mid X", "Mid Y", "Layer", "Rotation"])
     for row in csv.DictReader(f):
         if row["Ref"] in machine:
-            w.writerow([row["Ref"], row["PosX"] + "mm", row["PosY"] + "mm", "Top" if row["Side"] == "top" else "Bottom", row["Rot"]])
+            rot = (float(row["Rot"]) + JLC_ROT_FIX.get(row["Ref"], 0)) % 360
+            w.writerow([row["Ref"], row["PosX"] + "mm", row["PosY"] + "mm", "Top" if row["Side"] == "top" else "Bottom", f"{rot:.6f}"])
 os.remove(pos)
 
 # BOM grouped by value + footprint + LCSC

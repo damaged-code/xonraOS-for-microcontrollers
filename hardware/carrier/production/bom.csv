@@ -1,0 +1,8 @@
+Comment,Designator,Footprint,LCSC,Assembly
+TFT 1.8in ST7735,J2,PinHeader_1x08_P2.54mm_Vertical,,by hand
+Buzzer 5x5,LS1,Buzzer_5x5_SMD,,by hand
+220R,R1,R_Axial_DIN0204_L3.6mm_D1.6mm_P7.62mm_Horizontal,,by hand
+10k thumbwheel,RV1,Thumbwheel_16mm,,by hand
+Main (D3),SW1,SW_PUSH-12mm,,by hand
+Second (D6),SW2,SW_PUSH-12mm,,by hand
+Wemos D1 mini,U1,WEMOS_D1_mini_flat,,by hand

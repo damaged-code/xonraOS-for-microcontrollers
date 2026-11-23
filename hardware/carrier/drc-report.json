@@ -1,0 +1,176 @@
+{
+    "$schema": "https://schemas.kicad.org/drc.v1.json",
+    "coordinate_units": "mm",
+    "date": "2026-11-24T00:28:40",
+    "ignored_checks": [
+        {
+            "description": "Footprint has no courtyard defined",
+            "key": "missing_courtyard"
+        },
+        {
+            "description": "Track endpoint not centered on via",
+            "key": "track_not_centered_on_via"
+        },
+        {
+            "description": "Tuning profile track geometries",
+            "key": "tuning_profile_track_geometries"
+        },
+        {
+            "description": "Footprint doesn't match symbol's footprint filters",
+            "key": "footprint_filters_mismatch"
+        },
+        {
+            "description": "Footprint component type doesn't match footprint pads",
+            "key": "footprint_type_mismatch"
+        }
+    ],
+    "included_severities": [
+        "error",
+        "warning",
+        "exclusion"
+    ],
+    "kicad_version": "10.0.8",
+    "schematic_parity": [],
+    "source": "xonraOS.kicad_pcb",
+    "unconnected_items": [],
+    "violations": [
+        {
+            "description": "Silkscreen clipped by board edge",
+            "items": [
+                {
+                    "description": "Segment on Edge.Cuts",
+                    "pos": {
+                        "x": 100.0,
+                        "y": 101.5
+                    },
+                    "uuid": "291cd564-5439-4e0d-b8a2-4c702f7a98e8"
+                },
+                {
+                    "description": "Rectangle of U1 on F.Silkscreen",
+                    "pos": {
+                        "x": 100.0,
+                        "y": 160.7
+                    },
+                    "uuid": "795e6bd8-5c0d-476e-b030-634654458cc7"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_edge_clearance"
+        },
+        {
+            "description": "Silkscreen clipped by board edge",
+            "items": [
+                {
+                    "description": "Segment on Edge.Cuts",
+                    "pos": {
+                        "x": 160.0,
+                        "y": 186.5
+                    },
+                    "uuid": "6aa25717-9e79-401b-9256-4f5d962ea99d"
+                },
+                {
+                    "description": "Circle of RV1 on F.Silkscreen",
+                    "pos": {
+                        "x": 156.0,
+                        "y": 150.0
+                    },
+                    "uuid": "21bd990d-b234-4e30-965a-2cbee22da5ef"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_edge_clearance"
+        },
+        {
+            "description": "Silkscreen clearance",
+            "items": [
+                {
+                    "description": "Circle of RV1 on F.Silkscreen",
+                    "pos": {
+                        "x": 156.0,
+                        "y": 150.0
+                    },
+                    "uuid": "21bd990d-b234-4e30-965a-2cbee22da5ef"
+                },
+                {
+                    "description": "Reference field of RV1",
+                    "pos": {
+                        "x": 156.0,
+                        "y": 141.4
+                    },
+                    "uuid": "8e8ddafa-69b3-437d-92e0-b9aa506dbd9e"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_overlap"
+        },
+        {
+            "description": "Silkscreen clipped by solder mask",
+            "items": [
+                {
+                    "description": "Circle of RV1 on F.Silkscreen",
+                    "pos": {
+                        "x": 156.0,
+                        "y": 150.0
+                    },
+                    "uuid": "21bd990d-b234-4e30-965a-2cbee22da5ef"
+                },
+                {
+                    "description": "PTH pad 1 [BTN1] of SW1",
+                    "pos": {
+                        "x": 147.25,
+                        "y": 150.3
+                    },
+                    "uuid": "8e1e3dc8-1317-4b06-99ac-7912e32682b0"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_over_copper"
+        },
+        {
+            "description": "Silkscreen clipped by solder mask",
+            "items": [
+                {
+                    "description": "Rectangle of LS1 on F.Silkscreen",
+                    "pos": {
+                        "x": 142.4,
+                        "y": 170.4
+                    },
+                    "uuid": "739d7d90-1886-4fec-be31-229009a878c8"
+                },
+                {
+                    "description": "Pad 2 [GND] of LS1 on F.Cu",
+                    "pos": {
+                        "x": 146.9,
+                        "y": 174.9
+                    },
+                    "uuid": "e155c789-c9fa-4ff1-8115-320a8346f20f"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_over_copper"
+        },
+        {
+            "description": "Silkscreen clipped by solder mask",
+            "items": [
+                {
+                    "description": "Rectangle of LS1 on F.Silkscreen",
+                    "pos": {
+                        "x": 142.4,
+                        "y": 170.4
+                    },
+                    "uuid": "739d7d90-1886-4fec-be31-229009a878c8"
+                },
+                {
+                    "description": "Pad 1 [BUZ] of LS1 on F.Cu",
+                    "pos": {
+                        "x": 143.1,
+                        "y": 171.1
+                    },
+                    "uuid": "dd77ac42-c24d-4d3a-8b50-00a8ec664fe5"
+                }
+            ],
+            "severity": "warning",
+            "type": "silk_over_copper"
+        }
+    ]
+}
