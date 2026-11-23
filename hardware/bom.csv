@@ -1,0 +1,22 @@
+Comment,Designator,Footprint,LCSC,Qty,Assembly,Notes
+ESP-12F,U1,ESP-12F module,C82891,1,machine,Verify LCSC number
+CH340C,U2,SOP-16,C84681,1,machine,USB-serial with internal crystal; powered at 3.3 V
+AMS1117-3.3,U3,SOT-223,C6186,1,machine,3.3 V regulator
+USB-C 16-pin receptacle,J1,TYPE-C-31-M-12,C165948,1,machine,Verify footprint matches part
+TFT header pads (8 x 2.54 mm holes),J2,PinHeader_1x08_P2.54mm,,0,hand,TFT module is soldered on with its own pins (2.5 mm spacer)
+S8050 NPN,Q1 Q2 Q3,SOT-23,C2146,3,machine,Auto-reset (Q1 Q2) and buzzer driver (Q3)
+1N4148W,D1,SOD-123,C81598,1,machine,Buzzer flyback diode
+LED green,D2,0603,C72043,1,machine,Power LED
+Magnetic buzzer 5x5 mm 3.6 V,LS1,MLT-5020,,1,machine,Passive buzzer driven by tone(); pick an LCSC 5x5 part
+Tactile switch 12x12x5 mm (THT),SW1 SW2,SW_PUSH_12mm,,2,hand,Main (D7) and second (D6) under printed 14 mm caps (button-cap.stl)
+Tactile switch small SMD,SW3 SW4,SMD 4x3 mm,C318884,2,machine,RESET and FLASH; inside the case (USB flashing resets automatically)
+10k thumbwheel potentiometer flat 16 mm wheel,RV1,thumbwheel (check datasheet),,1,hand,Lies flat; wheel rim sticks out of the right side of the case
+10k resistor,R1 R2 R3 R4 R5 R8 R9,0603,C25804,7,machine,
+5.1k resistor,R6 R7,0603,C23186,2,machine,USB-C CC pull-downs
+1k resistor,R10 R14,0603,C21190,2,machine,
+220k resistor,R11,0603,C22961,1,machine,Knob divider top; verify number
+100k resistor,R12,0603,C25803,1,machine,Knob divider bottom; verify number
+10uF capacitor,C1 C2 C3,0805,C15850,3,machine,Regulator in/out and ESP bulk
+100nF capacitor,C4 C5 C6 C7,0603,C14663,4,machine,Decoupling and EN delay
+1.8 inch ST7735 TFT module 160x128 SPI,DISP1,module,,1,hand,Buy separately (common red 1.8in SPI module); measure before printing the case
+M2 x 12 mm flat-head (countersunk) screw,,,,3,hand,From underneath: through base and board into the lid

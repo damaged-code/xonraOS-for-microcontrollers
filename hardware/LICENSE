@@ -1,0 +1,16 @@
+SPDX-License-Identifier: CERN-OHL-S-2.0
+
+The hardware design files in this folder (schematic, netlist, parts list and,
+when added, PCB layout and case files) are licensed under the
+CERN Open Hardware Licence Version 2 - Strongly Reciprocal (CERN-OHL-S-2.0).
+
+Full licence text: https://ohwr.org/cern_ohl_s_v2.txt
+
+You may build, change and sell boards made from this design. If you
+distribute a changed design or products made from it, you must make your
+changed design files available under the same licence.
+
+The name "xonraOS" is not licensed by this file. Boards built by others may
+say "compatible with xonraOS" but should not be sold as official xonraOS boards.
+
+The firmware is licensed separately under GPL-3.0 (see ../LICENSE).

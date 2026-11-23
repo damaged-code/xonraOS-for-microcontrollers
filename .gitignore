@@ -18,4 +18,5 @@ catalog.json
 private.key
 *.key
 !firmware/xonraOS/public.key
+!firmware/xonraOS_TFT/public.key
 firmware/xonraOS_TFT/secrets.h

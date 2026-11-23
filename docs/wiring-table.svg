@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 560" width="640" height="560" font-family="Inter, Arial, Helvetica, sans-serif">
+  <title>xonraOS wiring table</title>
+  <rect width="640" height="560" fill="#000000"/>
+  <text x="24" y="40" font-size="22" font-weight="700" fill="#ffffff">How to place</text>
+  <text x="24" y="62" font-size="12" fill="#9a9a9a">Connect each part pin to the NodeMCU pin. Optional parts can be left out.</text>
+
+  <!-- header -->
+  <rect x="24" y="80" width="592" height="32" rx="6" fill="#3a3a3a"/>
+  <g font-size="13" font-weight="700" fill="#ffffff">
+    <text x="40" y="101">Part</text>
+    <text x="280" y="101">Part pin</text>
+    <text x="440" y="101">NodeMCU pin</text>
+  </g>
+
+  <g font-size="13" fill="#e6e6e6">
+    <!-- OLED -->
+    <rect x="24" y="112" width="592" height="128" fill="#121212"/>
+    <text x="40" y="134">OLED screen</text>
+    <text x="280" y="134">VCC</text>
+    <text x="280" y="166">GND</text><text x="440" y="166">GND</text>
+    <text x="280" y="198">SCL</text><text x="440" y="198">D1</text>
+    <text x="280" y="230">SDA</text><text x="440" y="230">D2</text>
+
+    <!-- Main button -->
+    <rect x="24" y="240" width="592" height="64" fill="#1c1c1c"/>
+    <text x="40" y="262">Main button</text>
+    <text x="280" y="262">one leg</text><text x="440" y="262">D7</text>
+    <text x="280" y="294">opposite leg</text><text x="440" y="294">GND</text>
+
+    <!-- Second button -->
+    <rect x="24" y="304" width="592" height="64" fill="#121212"/>
+    <text x="40" y="326">Second button</text>
+    <text x="40" y="344" font-size="11" fill="#8a8a8a">optional</text>
+    <text x="280" y="326">one leg</text><text x="440" y="326">D6</text>
+    <text x="280" y="358">opposite leg</text><text x="440" y="358">GND</text>
+
+    <!-- Buzzer -->
+    <rect x="24" y="368" width="592" height="64" fill="#1c1c1c"/>
+    <text x="40" y="390">Buzzer</text>
+    <text x="40" y="408" font-size="11" fill="#8a8a8a">optional</text>
+    <text x="280" y="390">+ (long leg)</text><text x="440" y="390">D8</text>
+    <text x="280" y="422">− (short leg)</text><text x="440" y="422">GND</text>
+
+    <!-- Knob -->
+    <rect x="24" y="432" width="592" height="96" fill="#121212"/>
+    <text x="40" y="454">Knob (10k)</text>
+    <text x="40" y="472" font-size="11" fill="#8a8a8a">optional</text>
+    <text x="280" y="454">left pin</text>
+    <text x="280" y="486">middle pin</text><text x="440" y="486">A0</text>
+    <text x="280" y="518">right pin</text><text x="440" y="518">GND</text>
+  </g>
+
+  <!-- pin colour chips -->
+  <g font-size="13" font-weight="700">
+    <text x="440" y="134" fill="#ff6b6b">3V3</text>
+    <text x="440" y="454" fill="#ff6b6b">3V3</text>
+  </g>
+  <rect x="24" y="80" width="592" height="448" rx="6" fill="none" stroke="#3a3a3a"/>
+  <text x="24" y="550" font-size="11" fill="#8a8a8a">Use 3V3, never 5V/VIN, for the screen and knob.</text>
+</svg>

@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" width="1200" height="800" font-family="Arial, Helvetica, sans-serif">
+  <title>xonraOS board v0.1 schematic (block level)</title>
+  <style>
+    .blk{fill:#fff;stroke:#111;stroke-width:2}
+    .ttl{font-size:16px;font-weight:bold;fill:#111}
+    .sub{font-size:11px;fill:#555}
+    .pin{font-size:11px;fill:#111}
+    .w{stroke:#111;stroke-width:1.6;fill:none}
+    .pw{stroke:#c0392b;stroke-width:2.2;fill:none}
+    .gd{stroke:#555;stroke-width:1.6;fill:none;stroke-dasharray:5 3}
+    .net{font-size:11px;fill:#1f5fa8;font-weight:bold}
+    .note{font-size:12px;fill:#333}
+  </style>
+  <rect width="1200" height="800" fill="#ffffff"/>
+  <text x="20" y="32" font-size="22" font-weight="bold" fill="#111">xonraOS board v0.1 — block schematic</text>
+  <text x="20" y="52" class="sub">Draft. Exact connections: hardware/README.md (netlist). Parts: hardware/bom.csv. CERN-OHL-S-2.0</text>
+
+  <!-- USB-C -->
+  <g id="J1-USB-C">
+    <rect class="blk" x="30" y="110" width="150" height="150" rx="6"/>
+    <text class="ttl" x="45" y="135">J1 USB-C</text>
+    <text class="pin" x="45" y="165">VBUS</text>
+    <text class="pin" x="45" y="190">D+ / D-</text>
+    <text class="pin" x="45" y="215">CC1 → R6 5.1k → GND</text>
+    <text class="pin" x="45" y="235">CC2 → R7 5.1k → GND</text>
+  </g>
+
+  <!-- Regulator -->
+  <g id="U3-regulator">
+    <rect class="blk" x="280" y="90" width="170" height="90" rx="6"/>
+    <text class="ttl" x="295" y="115">U3 AMS1117-3.3</text>
+    <text class="sub" x="295" y="135">C1 10µF in · C2 10µF out</text>
+    <text class="pin" x="295" y="160">VIN 5V → VOUT 3V3</text>
+  </g>
+  <path class="pw" d="M180 160 H230 V135 H280"/>
+  <text class="net" x="200" y="128">VBUS</text>
+  <path class="pw" d="M450 135 H1160"/>
+  <text class="net" x="470" y="128">3V3 rail</text>
+
+  <!-- CH340C -->
+  <g id="U2-CH340C">
+    <rect class="blk" x="280" y="230" width="170" height="150" rx="6"/>
+    <text class="ttl" x="295" y="255">U2 CH340C</text>
+    <text class="sub" x="295" y="273">USB-serial, at 3.3 V · C5 100nF</text>
+    <text class="pin" x="295" y="300">UD+ / UD-</text>
+    <text class="pin" x="295" y="320">TXD → ESP RXD0</text>
+    <text class="pin" x="295" y="340">RXD ← ESP TXD0</text>
+    <text class="pin" x="295" y="360">DTR, RTS</text>
+  </g>
+  <path class="w" d="M180 190 H230 V300 H280"/>
+  <text class="net" x="196" y="215">D+/D-</text>
+  <path class="pw" d="M365 135 V230"/>
+
+  <!-- Auto reset -->
+  <g id="Q1-Q2-autoreset">
+    <rect class="blk" x="280" y="430" width="170" height="110" rx="6"/>
+    <text class="ttl" x="295" y="455">Auto-reset</text>
+    <text class="pin" x="295" y="478">Q1 S8050: DTR→EN</text>
+    <text class="pin" x="295" y="498">Q2 S8050: RTS→GPIO0</text>
+    <text class="sub" x="295" y="520">R8, R9 10k bases</text>
+  </g>
+  <path class="w" d="M365 380 V430"/>
+  <text class="net" x="372" y="410">DTR / RTS</text>
+
+  <!-- ESP-12F -->
+  <g id="U1-ESP-12F">
+    <rect class="blk" x="560" y="200" width="230" height="400" rx="6"/>
+    <rect x="560" y="200" width="230" height="40" fill="#eee" stroke="#111" stroke-width="2"/>
+    <text class="ttl" x="575" y="226">U1 ESP-12F</text>
+    <text class="sub" x="680" y="226">antenna end: no copper</text>
+    <text class="pin" x="575" y="265">VCC (3V3) · C3 10µF · C4 100nF</text>
+    <text class="pin" x="575" y="290">RXD0 / TXD0</text>
+    <text class="pin" x="575" y="315">EN  — R1 10k↑, C7 100nF</text>
+    <text class="pin" x="575" y="340">RST — R2 10k↑, SW3 RESET</text>
+    <text class="pin" x="575" y="365">GPIO0 — R3 10k↑, SW4 FLASH</text>
+    <text class="pin" x="575" y="390">GPIO2 — R4 10k↑</text>
+    <text class="pin" x="575" y="415">GPIO15 — R5 10k↓ (D8)</text>
+    <text class="pin" x="575" y="445">GPIO4 SDA (D2)</text>
+    <text class="pin" x="575" y="470">GPIO5 SCL (D1)</text>
+    <text class="pin" x="575" y="500">GPIO13 (D7)</text>
+    <text class="pin" x="575" y="525">GPIO12 (D6)</text>
+    <text class="pin" x="575" y="560">TOUT / ADC (A0)</text>
+  </g>
+  <path class="pw" d="M675 135 V200"/>
+  <path class="w" d="M450 330 H560"/>
+  <text class="net" x="470" y="322">TX/RX</text>
+  <path class="w" d="M450 485 H510 V315 H560"/>
+  <path class="w" d="M510 365 H560"/>
+  <text class="net" x="466" y="478">EN, GPIO0</text>
+
+  <!-- OLED -->
+  <g id="J2-OLED">
+    <rect class="blk" x="900" y="190" width="260" height="120" rx="6"/>
+    <rect x="1010" y="210" width="130" height="70" fill="#111" rx="3"/>
+    <text x="1030" y="250" font-size="13" fill="#7fdbff">0.96" OLED</text>
+    <text class="ttl" x="915" y="215">J2 OLED</text>
+    <text class="pin" x="915" y="240">GND</text>
+    <text class="pin" x="915" y="258">VCC 3V3</text>
+    <text class="pin" x="915" y="276">SCL</text>
+    <text class="pin" x="915" y="294">SDA</text>
+  </g>
+  <path class="pw" d="M1030 135 V190"/>
+  <path class="w" d="M790 440 H850 V290 H900"/>
+  <path class="w" d="M790 465 H865 V272 H900"/>
+  <text class="net" x="800" y="432">I2C</text>
+
+  <!-- Buttons -->
+  <g id="SW1-SW2-buttons">
+    <rect class="blk" x="900" y="350" width="260" height="110" rx="6"/>
+    <text class="ttl" x="915" y="375">Buttons (to GND)</text>
+    <text class="pin" x="915" y="400">SW1 main → GPIO13</text>
+    <text class="pin" x="915" y="425">SW2 second → GPIO12</text>
+    <text class="sub" x="915" y="447">internal pull-ups in firmware</text>
+  </g>
+  <path class="w" d="M790 495 H880 V400 H900"/>
+  <path class="w" d="M790 520 H890 V425 H900"/>
+
+  <!-- Buzzer -->
+  <g id="LS1-buzzer">
+    <rect class="blk" x="900" y="490" width="260" height="110" rx="6"/>
+    <text class="ttl" x="915" y="515">Buzzer</text>
+    <text class="pin" x="915" y="540">GPIO15 → R10 1k → Q3 S8050</text>
+    <text class="pin" x="915" y="562">Q3 → LS1 → 3V3 · D1 1N4148</text>
+    <text class="sub" x="915" y="584">R5 keeps it off at boot</text>
+  </g>
+  <path class="w" d="M790 410 H835 V540 H900"/>
+
+  <!-- Knob -->
+  <g id="RV1-knob">
+    <rect class="blk" x="560" y="650" width="420" height="100" rx="6"/>
+    <text class="ttl" x="575" y="675">Knob RV1 10k</text>
+    <text class="pin" x="575" y="700">3V3 — RV1 — GND · wiper → R11 220k → TOUT → R12 100k → GND</text>
+    <text class="sub" x="575" y="722">divider makes 0–3.3 V into 0–1 V, so knob() reads 0–1023</text>
+  </g>
+  <path class="w" d="M675 560 V650"/>
+
+  <!-- Power LED -->
+  <g id="D2-power-led">
+    <rect class="blk" x="30" y="650" width="230" height="70" rx="6"/>
+    <text class="ttl" x="45" y="675">Power LED</text>
+    <text class="pin" x="45" y="700">3V3 → R14 1k → D2 → GND</text>
+  </g>
+
+  <text class="note" x="30" y="780">Red = power. Blue labels = signal nets. All GND connections omitted from the drawing for clarity.</text>
+</svg>
