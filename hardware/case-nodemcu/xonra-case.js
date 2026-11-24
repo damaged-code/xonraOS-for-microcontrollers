@@ -14,7 +14,7 @@ const { primitives, booleans, transforms, measurements } = require('@jscad/model
 const stl = require('@jscad/stl-serializer');
 const { cuboid, cylinder, polygon } = primitives;
 const { union, subtract, intersect } = booleans;
-const { translate, rotateX, rotateY } = transforms;
+const { translate, rotateX, rotateY, mirrorX } = transforms;
 const { extrudeLinear } = require('@jscad/modeling').extrusions;
 const { hull } = require('@jscad/modeling').hulls;
 
@@ -32,12 +32,18 @@ const LOGO = { text: 'XONRA', font: 'C:/Windows/Fonts/ENGR.TTF', cap: 3.6, y: -2
 
 // ---------- case ----------
 const C = {
-  gap: 0.4, wall: 2.0, floor: 1.6, inner: 34, corner: 5,
-  edgeBottom: 1.2, edgeTop: 1.6, seam: 0.4, shadowH: 0.8, shadowD: 0.5,
+  gap: 0.4, wall: 2.0, floor: 1.6, inner: 34, corner: 6,
+  edgeBottom: 3.0, edgeTop: 2.0, seam: 0.4, shadowH: 0.8, shadowD: 0.5,   // big soft bottom edge makes the box look thinner
+  accentZ: 7, accentH: 1.0, accentD: 0.5,                                  // styling line around the base
+  panelW: 38, panelD: 27, panelR: 3, ledge: 0.6,                           // glossy black screen panel set into the lid
+  ring: 0.4,                                                               // depth of the trim ring around each button
+  usbRecessW: 17, usbRecessH: 12, usbRecessD: 0.8,                         // rounded pocket around the USB opening
+  feetD: 8.2, feetDepth: 0.8, feetInset: 9,                                // pockets for 8 mm stick-on rubber feet
+  bottomCap: 6,                                                            // XONRA under the base
   lid: 2.0, lipH: 2.5, lipT: 1.2, fit: 0.25, snapH: 0.6, snapL: 8, grooveD: 0.75,
   usbW: 12, usbH: 8,                    // opening for the micro-USB plug body
   scoopR: 16, scoopD: 1.0,              // thumb scoop around the wheel
-  bezelW: 36, bezelD: 24, bezelDepth: 0.4, bevel: 1,
+  bevel: 1,
   capClear: 0.6, capRise: 1.2, flangeT: 0.8, boss: 3.0,
 };
 
@@ -101,15 +107,27 @@ function base() {
     const zg = zLid - C.lipH + 0.15, hg = C.lipH - 0.4, L = C.snapL + 1;
     b = subtract(b, axis === 'x' ? box(C.grooveD * 2, L, hg, side * IW / 2, pos, zg) : box(L, C.grooveD * 2, hg, pos, side * ID / 2, zg));
   }
-  // USB: pill-shaped opening in the bottom wall, in line with the NodeMCU's port
-  { const rr = C.usbH / 2, pin = (dx) => translate([dx, -OD / 2, usbZ], rotateX(Math.PI / 2, cylinder({ radius: rr, height: 2 * C.wall + 4, segments: 32 })));
-    b = subtract(b, hull(pin(-(C.usbW / 2 - rr)), pin(C.usbW / 2 - rr))); }
+  // USB: pill-shaped opening in the bottom wall, in line with the NodeMCU's port, inside a shallow rounded pocket
+  { const pill = (w, h, len) => { const rr = h / 2, pin = (dx) => translate([dx, -OD / 2, usbZ], rotateX(Math.PI / 2, cylinder({ radius: rr, height: len, segments: 32 })));
+      return hull(pin(-(w / 2 - rr)), pin(w / 2 - rr)); };
+    b = subtract(b, pill(C.usbW, C.usbH, 2 * C.wall + 4));
+    b = subtract(b, pill(C.usbRecessW, C.usbRecessH, 2 * C.usbRecessD)); }
+  // styling line all the way round
+  b = subtract(b, subtract(box(OW + 2, OD + 2, C.accentH, 0, 0, C.accentZ),
+    roundedRect(OW - 2 * C.accentD, OD - 2 * C.accentD, C.accentH, 0, 0, C.accentZ, C.corner - C.accentD)));
+  // underside: pockets for rubber feet and XONRA (mirrored so it reads from below)
+  for (const sx of [-1, 1]) for (const sy of [-1, 1])
+    b = subtract(b, cyl(C.feetD, C.feetDepth + 0.01, sx * (OW / 2 - C.feetInset), sy * (OD / 2 - C.feetInset), -0.01));
+  { const t = textShape(LOGO.text, C.bottomCap);
+    if (t) b = subtract(b, translate([0, 0, -1], extrudeLinear({ height: LOGO.depth + 1 }, mirrorX(t)))); }
   // side wheel: thumb scoop and the hole for the pot's threaded bushing
   b = subtract(b, cylinder({ radius: C.scoopR, height: zLid + 2, center: [OW / 2 + C.scoopR - C.scoopD, P.pot.y, zLid / 2 - 1], segments: 96 }));
   b = subtract(b, translate([OW / 2, P.pot.y, potZ], rotateY(Math.PI / 2, cylinder({ radius: P.pot.bushing / 2, height: 2 * C.wall + 4, segments: 32 }))));
-  // buzzer grille: 7 round holes in the left wall
-  for (const [dy, dz] of [[0, 0], [-3.2, 0], [3.2, 0], [-1.6, 2.8], [1.6, 2.8], [-1.6, -2.8], [1.6, -2.8]])
-    b = subtract(b, translate([-OW / 2, P.buzzer.y + dy, potZ + dz], rotateY(Math.PI / 2, cylinder({ radius: 0.9, height: 2 * C.wall + 4, segments: 16 }))));
+  // buzzer grille: 5 rounded vertical slots in the left wall
+  for (let i = -2; i <= 2; i++) {
+    const slot = (dz) => translate([-OW / 2, P.buzzer.y + i * 2.8, potZ + dz], rotateY(Math.PI / 2, cylinder({ radius: 0.7, height: 2 * C.wall + 4, segments: 16 })));
+    b = subtract(b, hull(slot(-3.3), slot(3.3)));
+  }
   return b;  // the breadboard fits the inside with 0.4 mm to spare; its sticky back holds it to the floor
 }
 
@@ -128,18 +146,24 @@ function lid() {
   const o = P.oled, ocy = o.y - o.winOffY, fw = o.w + 0.4, fd = o.d + 0.4;
   let frame = subtract(box(fw + 2.4, fd + 2.4, o.t, 0, ocy, -o.t), box(fw, fd, o.t + 2, 0, ocy, -o.t - 1));
   frame = subtract(frame, box(fw - 6, 4, o.t + 2, 0, ocy + fd / 2, -o.t - 1));
+  frame = subtract(frame, box(C.panelW, C.panelD, o.t + 2, 0, o.y, -o.t - 1));   // no walls hanging under the panel opening
   parts.push(frame);
   // button bosses: a ring under each cap hole; the button holder (separate print) is glued under it
   for (const k of ['main', 'second']) { const c = P.caps[k]; parts.push(subtract(cyl(c.d + 6, C.boss, c.x, c.y, -C.boss), cyl(c.d + 2.8, C.boss + 2, c.x, c.y, -C.boss - 1))); }
   let l = union(parts);
-  // screen window with a bevel, inside a shallow bezel that reads as a glass panel
-  l = subtract(l, roundedRect(C.bezelW, C.bezelD, C.bezelDepth + 1, 0, o.y, C.lid - C.bezelDepth, 3));
-  l = subtract(l, box(o.winW, o.winD, C.lid + 2, 0, o.y, -1));
-  l = subtract(l, hull(box(o.winW, o.winD, 0.01, 0, o.y, C.lid - C.bezelDepth - C.bevel), box(o.winW + 2 * C.bevel, o.winD + 2 * C.bevel, 0.01, 0, o.y, C.lid - C.bezelDepth + 0.01)));
-  for (const k of ['main', 'second']) {  // round button openings with a soft chamfer
+  // opening for the black screen panel: full size above the ledge, 1 mm smaller below (the ledge holds the panel)
+  l = subtract(l, roundedRect(C.panelW, C.panelD, C.lid + 2, 0, o.y, C.ledge, C.panelR));
+  l = subtract(l, roundedRect(C.panelW - 2, C.panelD - 2, C.lid + 2, 0, o.y, -1, C.panelR - 1));
+  // the panel (separate print, glossy black): flush with the lid top, bevelled window over the picture
+  let panel = union(roundedRect(C.panelW - 0.3, C.panelD - 0.3, C.lid - C.ledge, 0, o.y, C.ledge, C.panelR - 0.15),
+    roundedRect(C.panelW - 2.4, C.panelD - 2.4, C.ledge + 0.01, 0, o.y, 0, C.panelR - 1.2));
+  panel = subtract(panel, box(o.winW, o.winD, C.lid + 2, 0, o.y, -1));
+  panel = subtract(panel, hull(box(o.winW, o.winD, 0.01, 0, o.y, C.lid - C.bevel), box(o.winW + 2 * C.bevel + 0.6, o.winD + 2 * C.bevel + 0.6, 0.01, 0, o.y, C.lid + 0.5)));
+  for (const k of ['main', 'second']) {  // round button openings with a soft chamfer and a thin trim ring
     const c = P.caps[k], hole = c.d + C.capClear;
     l = subtract(l, cyl(hole, C.lid + 2, c.x, c.y, -1));
     l = subtract(l, hull(cyl(hole, 0.01, c.x, c.y, C.lid - 0.6), cyl(hole + 2.2, 0.01, c.x, c.y, C.lid + 0.5)));
+    l = subtract(l, subtract(cyl(hole + 5, C.ring + 1, c.x, c.y, C.lid - C.ring), cyl(hole + 3.6, C.ring + 2, c.x, c.y, C.lid - C.ring - 1)));
   }
   let name = null;
   const nm = textShape(LOGO.text, LOGO.cap);
@@ -148,7 +172,7 @@ function lid() {
     l = subtract(l, translate([0, 0, C.lid - LOGO.depth], extrudeLinear({ height: LOGO.depth + 1 }, placed)));
     name = translate([0, 0, C.lid - LOGO.depth], extrudeLinear({ height: LOGO.depth }, placed));
   }
-  return { lid: l, name };
+  return { lid: l, name, panel };
 }
 const flip = (g) => translate([0, 0, C.lid], rotateX(Math.PI, g));   // print the lid top face down
 const toWorld = (g) => translate([0, 0, zLid], g);                  // closed position
@@ -173,6 +197,8 @@ function wheelKnob() {
   const d = 20, t = 8, bore = 7;
   let k = cylinder({ radius: d / 2, height: t, center: [0, 0, t / 2], segments: 96 });
   for (let i = 0; i < 36; i++) { const a = (i / 36) * 2 * Math.PI; k = subtract(k, cylinder({ radius: 0.55, height: t + 2, center: [Math.cos(a) * d / 2, Math.sin(a) * d / 2, t / 2], segments: 10 })); }
+  k = intersect(k, hull(cyl(d - 1.6, 0.01, 0, 0, 0), cyl(d + 0.2, t - 1.6, 0, 0, 0.8), cyl(d - 1.6, 0.01, 0, 0, t - 0.01)));  // chamfered edges
+  k = subtract(k, subtract(cyl(d - 5, 0.5, 0, 0, t - 0.5), cyl(d - 6.2, 0.6, 0, 0, t - 0.55)));                          // fine ring on the outer face
   const shaft = intersect(cylinder({ radius: P.pot.shaft / 2 + 0.1, height: bore + 1, center: [0, 0, (bore + 1) / 2 - 1], segments: 32 }),
     box(P.pot.shaft + 2, P.pot.shaft + 2, bore + 1, 0, P.pot.flat + 0.1 - (P.pot.shaft + 2) / 2 - P.pot.shaft / 2, -1));
   return subtract(k, shaft);   // blind D-hole, flat side down; print with the hole facing up
@@ -193,7 +219,7 @@ function drawingSvg() {
   const s = 6, pad = 40, X = (x) => pad + (x + OW / 2) * s, Y = (y) => pad + (OD / 2 - y) * s;
   const o = P.oled;
   let g = `<rect x="${X(-OW / 2)}" y="${Y(OD / 2)}" width="${OW * s}" height="${OD * s}" rx="${C.corner * s}" fill="#2b2b2e" stroke="#888"/>`;
-  g += `<rect x="${X(-C.bezelW / 2)}" y="${Y(o.y + C.bezelD / 2)}" width="${C.bezelW * s}" height="${C.bezelD * s}" rx="18" fill="#0d0d0f"/>`;
+  g += `<rect x="${X(-C.panelW / 2)}" y="${Y(o.y + C.panelD / 2)}" width="${C.panelW * s}" height="${C.panelD * s}" rx="18" fill="#0d0d0f"/>`;
   g += `<rect x="${X(-o.winW / 2)}" y="${Y(o.y + o.winD / 2)}" width="${o.winW * s}" height="${o.winD * s}" fill="#0b2a3a" stroke="#4da3ff"/>`;
   for (const k of ['main', 'second']) { const c = P.caps[k]; g += `<circle cx="${X(c.x)}" cy="${Y(c.y)}" r="${c.d / 2 * s}" fill="${k === 'main' ? '#bdbdc2' : '#111'}" stroke="#666"/>`; }
   g += `<rect x="${X(OW / 2)}" y="${Y(P.pot.y + 10)}" width="${8 * s}" height="${20 * s}" rx="6" fill="#111" stroke="#666"/>`;
@@ -228,13 +254,14 @@ for (const k of ['main', 'second']) {
   write(`button-cap-${k}.stl`, translate([0, 0, C.lid + C.capRise], rotateX(Math.PI, buttonCap(d))));  // top face down on the bed
   write(`button-holder-${k}.stl`, translate([0, 0, -C.boss], rotateX(Math.PI, buttonHolder(d))));       // plate on the bed, socket up
 }
+write('screen-panel.stl', flip(L.panel));   // glossy black, drops into the lid from above
 write('wheel-knob.stl', wheelKnob());
 write('inside-preview.stl', insidePreview());
 fs.writeFileSync(path.join(__dirname, 'case-drawing.svg'), drawingSvg());
 console.log(`case outside: ${OW.toFixed(1)} x ${OD.toFixed(1)} x ${H.toFixed(1)} mm`);
 
 if (process.env.CHECK) {
-  const lidW = toWorld(L.lid);
+  const lidW = translate([0, 0, 0.02], toWorld(L.lid));   // lifted 0.02 mm so parts that only touch the lid do not count
   const capsW = union(['main', 'second'].map((k) => { const c = P.caps[k]; return toWorld(translate([c.x, c.y, 0], buttonCap(c.d))); }));
   const holdersW = union(['main', 'second'].map((k) => { const c = P.caps[k]; return toWorld(translate([c.x, c.y, 0], buttonHolder(c.d))); }));
   const items = { inside: insidePreview(), caps: capsW, holders: holdersW };

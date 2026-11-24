@@ -4,7 +4,7 @@ A case for the build most people already have: **NodeMCU on a breadboard, 0.96" 
 and a 16 mm knob potentiometer**, connected with male-to-female jumper wires. Nothing to buy except the print.
 
 Same look as the custom-board case in `../case`: rounded edges, a shadow line where the lid meets the base, a
-snap-fit lid (no screws), big round buttons, a scroll wheel on the right side and **XONRA** on the front.
+snap-fit lid (no screws), a glossy black screen panel, big round buttons with trim rings, a styling line around the base, a recessed USB port, a slotted speaker grille, a chamfered side wheel, **XONRA** on the front and underneath, and pockets for rubber feet.
 
 Outside size: **59.8 × 87.3 × 37.6 mm**. It is thick because jumper wires need room. A soldered build can be much thinner (see `../carrier`).
 
@@ -14,7 +14,8 @@ Outside size: **59.8 × 87.3 × 37.6 mm**. It is thick because jumper wires need
 | `lid.stl` | 1 | the top: screen window, button holes, OLED holder underneath (already lying top face down) |
 | `button-cap-main.stl`, `button-cap-second.stl` | 1 each | big round caps (main 16 mm, second 12 mm) |
 | `button-holder-main.stl`, `button-holder-second.stl` | 1 each | hold the 6×6 buttons under the caps; glued under the lid |
-| `wheel-knob.stl` | 1 | knurled wheel that presses onto the pot's shaft |
+| `screen-panel.stl` | 1 | glossy black panel around the screen; drops into the lid from above (print top face down on a smooth bed) |
+| `wheel-knob.stl` | 1 | knurled wheel with chamfered edges, presses onto the pot's shaft |
 | `lid-name.stl` | optional | the XONRA letters, for a second colour |
 | `inside-preview.stl` | no | the parts inside, for viewing only |
 | `case-drawing.svg` | — | top view with sizes (opens in Figma) |
@@ -23,6 +24,7 @@ Outside size: **59.8 × 87.3 × 37.6 mm**. It is thick because jumper wires need
 ## Print it
 
 - **Colours:** matte black or dark grey for base and lid; light grey for the main cap; black for the rest.
+- **Feet:** 4 stick-on rubber feet, 8 mm (optional, about 3 SAR), go in the pockets underneath.
 - PLA or PETG, 0.2 mm layers, 15–20 % infill, **no supports**. Print every part exactly as it loads.
 - Cheap options: anyone with a 3D printer, or a Haraj printing seller (often 20–40 SAR for parts this size).
 
