@@ -1,157 +1,250 @@
-// xonraOS desk case: a parametric 3D model for the breadboard-free build
-// (NodeMCU ESP8266 + 0.96" OLED + 2 buttons + buzzer + 10k panel knob, wired with jumper wires).
+// xonraOS case for the 0 SAR build: your NodeMCU on its breadboard, the 0.96" OLED, two 6x6 mm buttons,
+// a buzzer and a 16 mm knob potentiometer, all connected with male-to-female jumper wires.
+// Same premium look as hardware/case (rounded edges, shadow line, snap-fit lid with no screws, big round
+// buttons, a side wheel, XONRA on the front). It is thick because jumper wires need room; a soldered build can be much thinner.
 //
-// Make the STL files:
-//   npm install @jscad/modeling@2.12.5 @jscad/stl-serializer@2.1.20
-//   node xonra-case.js            -> base.stl, lid.stl, case-drawing.svg in this folder
-// Change the numbers in P below to fit your parts (measure them with a ruler or calipers first).
+//   npm install @jscad/modeling@2.12.5 @jscad/stl-serializer@2.1.20 opentype.js@1.3.4
+//   node xonra-case.js            (CHECK=1 node xonra-case.js also runs a fit check)
+// Measure your parts and change P below first. World coordinates: mm, x right, y up (screen end), z up, base bottom at z = 0.
 // License: CERN-OHL-S-2.0 (see ../LICENSE).
 
 const fs = require('fs');
 const path = require('path');
-const { primitives, booleans, transforms } = require('@jscad/modeling');
-const { measureBoundingBox, measureVolume } = require('@jscad/modeling').measurements;
+const { primitives, booleans, transforms, measurements } = require('@jscad/modeling');
 const stl = require('@jscad/stl-serializer');
-const { cuboid, cylinder, roundedCuboid } = primitives;
-const { union, subtract } = booleans;
-const { translate } = transforms;
+const { cuboid, cylinder, polygon } = primitives;
+const { union, subtract, intersect } = booleans;
+const { translate, rotateX, rotateY } = transforms;
+const { extrudeLinear } = require('@jscad/modeling').extrusions;
+const { hull } = require('@jscad/modeling').hulls;
 
-// ---------- parameters (millimetres) ----------
+// ---------- your parts (measure them) ----------
 const P = {
-  wall: 2, floor: 2, lid: 2.5, corner: 3,
-  innerW: 76, innerD: 52, innerH: 34,   // space inside the box
-  fit: 0.25,                            // gap between lid lip and walls (raise if the lid is too tight)
-  lipH: 3, lipT: 1.5,
-  post: 6, pilot: 2.5, screwHole: 3.4,  // M3 self-tapping screws, 3 corners
+  bb: { w: 55, d: 82.5, h: 8.5 },                    // 400-point "half" breadboard, lying flat, long side along y
+  node: { w: 31.5, d: 58, y0: -40.6, lift: 2.5, pcb: 1.6, h: 4.0 },  // NodeMCU v3 on the breadboard, USB end at the bottom (y0)
+  oled: { w: 27.6, d: 28.0, t: 3.0, y: 22, winW: 23, winD: 12.5, winOffY: 1.0 },  // 0.96" module; window centre = module centre + winOffY (towards the pins)
+  btn: { body: 6.0, bodyH: 3.5, total: 5.0, stem: 3.5 },  // 6x6 tactile switch: body height and total height including the stem
+  caps: { main: { x: 11, y: -10, d: 16 }, second: { x: -11, y: -10, d: 12 } },
+  pot: { y: 2, d: 16.5, depth: 9.5, bushing: 7.4, shaft: 6, flat: 4.5 },   // WH148-style 16 mm pot, 7 mm bushing, 6 mm D-shaft, through the right wall
+  buzzer: { y: 26, d: 12 },                          // 12 mm buzzer glued inside the left wall, behind a grille
+};
+const LOGO = { text: 'XONRA', font: 'C:/Windows/Fonts/ENGR.TTF', cap: 3.6, y: -28, depth: 0.5 };
 
-  // NodeMCU (CP2102 "Amica" v2 is about 49 x 26 mm). It lies upside down, pins pointing up.
-  nodeL: 49.5, nodeW: 26.7, nodeLift: 5.5, nodeX: -36.4, // nodeX = left end of the board
-  usbW: 12, usbH: 9,
-
-  // OLED module (about 27.3 x 27.8 mm) held under the lid; window over the screen
-  oledW: 27.8, oledH: 28.2, oledX: -17, oledY: 2, winW: 25, winH: 14, winOffY: -1.5, oledPocket: 3.5,
-
-  // Buttons: 6x6 mm tactile switches with tall stems (6x6x12 or 6x6x13)
-  btnHole: 4, btnBody: 6.4, btnPocket: 3, btnMain: [31, -13], btnSecond: [19, -13],
-
-  // Knob: 16 mm panel potentiometer (B10K) with a 7 mm threaded bushing
-  knobHole: 7.4, knob: [26, 12],
-
-  // Buzzer sound slots in the left wall
-  slots: 5, slotW: 1.6, slotH: 12, slotY: 15, slotZ: 18,
+// ---------- case ----------
+const C = {
+  gap: 0.4, wall: 2.0, floor: 1.6, inner: 34, corner: 5,
+  edgeBottom: 1.2, edgeTop: 1.6, seam: 0.4, shadowH: 0.8, shadowD: 0.5,
+  lid: 2.0, lipH: 2.5, lipT: 1.2, fit: 0.25, snapH: 0.6, snapL: 8, grooveD: 0.75,
+  usbW: 12, usbH: 8,                    // opening for the micro-USB plug body
+  scoopR: 16, scoopD: 1.0,              // thumb scoop around the wheel
+  bezelW: 36, bezelD: 24, bezelDepth: 0.4, bevel: 1,
+  capClear: 0.6, capRise: 1.2, flangeT: 0.8, boss: 3.0,
 };
 
 const segs = 48;
-const OW = P.innerW + 2 * P.wall, OD = P.innerD + 2 * P.wall, BH = P.floor + P.innerH;
-const box = (w, d, h, x, y, z) => cuboid({ size: [w, d, h], center: [x, y, z + h / 2] }); // z = bottom
-const hole = (d, h, x, y, z) => cylinder({ radius: d / 2, height: h, center: [x, y, z + h / 2], segments: segs });
-const postCenters = [[-(P.innerW / 2 - P.post / 2), P.innerD / 2 - P.post / 2],
-                     [P.innerW / 2 - P.post / 2, P.innerD / 2 - P.post / 2],
-                     [P.innerW / 2 - P.post / 2, -(P.innerD / 2 - P.post / 2)]];
-
-// ---------- base ----------
-function base() {
-  let shell = roundedCuboid({ size: [OW, OD, BH + P.corner], center: [0, 0, (BH + P.corner) / 2], roundRadius: P.corner, segments: 24 });
-  shell = subtract(shell, box(OW + 2, OD + 2, P.corner + 1, 0, 0, BH));             // flat top
-  shell = subtract(shell, box(P.innerW, P.innerD, P.innerH + 1, 0, 0, P.floor));     // hollow
-
-  const parts = [shell];
-  for (const [x, y] of postCenters) parts.push(subtract(box(P.post, P.post, P.innerH, x, y, P.floor), hole(P.pilot, 14, x, y, BH - 13)));
-
-  // NodeMCU cradle: corner blocks it rests on, and a low fence on the back and right
-  const x0 = P.nodeX, x1 = P.nodeX + P.nodeL, y0 = -P.innerD / 2 + 0.4, y1 = y0 + P.nodeW;
-  for (const [x, y] of [[x0 + 2.5, y0 + 2.5], [x1 - 2.5, y0 + 2.5], [x0 + 2.5, y1 - 2.5], [x1 - 2.5, y1 - 2.5]])
-    parts.push(box(5, 5, P.nodeLift, x, y, P.floor));
-  parts.push(box(1.5, P.nodeW + 3, P.nodeLift + 3, x1 + 0.75 + 0.3, (y0 + y1) / 2 + 1.5, P.floor)); // right end
-  parts.push(box(P.nodeL - 16, 1.5, P.nodeLift + 3, (x0 + x1) / 2 + 4, y1 + 0.75 + 0.3, P.floor)); // back side
-  let b = union(parts);
-
-  // USB opening in the left wall, centred on the board's short edge
-  const usbZ = P.floor + P.nodeLift - P.usbH / 2 + 1.5;
-  b = subtract(b, box(P.wall + 4, P.usbW, P.usbH, -OW / 2, (y0 + y1) / 2, usbZ));
-  // buzzer slots in the left wall, behind the board
-  for (let i = 0; i < P.slots; i++) {
-    const y = P.slotY - (P.slots - 1) * 1.6 + i * 3.2;
-    b = subtract(b, box(P.wall + 4, P.slotW, P.slotH, -OW / 2, y, P.slotZ - P.slotH / 2));
+const IW = P.bb.w + 2 * C.gap, ID = P.bb.d + 2 * C.gap;
+const OW = IW + 2 * C.wall, OD = ID + 2 * C.wall;
+const zLid = C.floor + C.inner, H = zLid + C.lid;
+const zBB = C.floor + P.bb.h;                                  // breadboard top
+const zNode = zBB + P.node.lift;                               // NodeMCU board bottom
+const usbZ = zNode + P.node.pcb + 1.5;                         // centre of its micro-USB port
+const potZ = zLid - P.pot.d / 2 - 3.5;                         // pot axis height (its body stays under the lid lip)
+const box = (w, d, h, x, y, z) => cuboid({ size: [w, d, h], center: [x, y, z + h / 2] });
+const cyl = (dia, h, x, y, z) => cylinder({ radius: dia / 2, height: h, center: [x, y, z + h / 2], segments: segs });
+function roundedRect(w, d, h, x, y, z, r) {
+  const c = (dx, dy) => cyl(2 * r, h, x + dx, y + dy, z);
+  return hull(c(-w / 2 + r, -d / 2 + r), c(w / 2 - r, -d / 2 + r), c(-w / 2 + r, d / 2 - r), c(w / 2 - r, d / 2 - r));
+}
+function body(z0, z1, b, t) {  // rounded corners, filleted bottom edge b and top edge t
+  const L = [], layer = (i, z) => roundedRect(OW - 2 * i, OD - 2 * i, 0.01, 0, 0, z, Math.max(0.6, C.corner - i));
+  for (let k = 0; k <= 5; k++) {
+    const a = (k / 5) * Math.PI / 2;
+    L.push(layer(b - b * Math.sin(a), z0 + b - b * Math.cos(a)));
+    L.push(layer(t - t * Math.cos(a), z1 - 0.01 - t + t * Math.sin(a)));
   }
-  return b;
+  return hull(L);
+}
+function textShape(text, capH) {
+  if (!LOGO.font || !fs.existsSync(LOGO.font)) { console.warn('logo font not found, name skipped'); return null; }
+  const font = require('opentype.js').loadSync(LOGO.font);
+  const scale = capH / ((font.tables.os2 && font.tables.os2.sCapHeight) || font.unitsPerEm * 0.7);
+  const cmds = font.getPath(text, 0, 0, font.unitsPerEm * scale).commands;
+  const contours = []; let cur = [], px = 0, py = 0;
+  const add = (x, y) => { cur.push([x, -y]); px = x; py = y; };
+  for (const c of cmds) {
+    if (c.type === 'M') { if (cur.length > 2) contours.push(cur); cur = []; add(c.x, c.y); }
+    else if (c.type === 'L') add(c.x, c.y);
+    else if (c.type === 'Q') { const [x0, y0] = [px, py]; for (let t = 1; t <= 6; t++) { const u = t / 6; add((1 - u) ** 2 * x0 + 2 * (1 - u) * u * c.x1 + u * u * c.x, (1 - u) ** 2 * y0 + 2 * (1 - u) * u * c.y1 + u * u * c.y); } }
+    else if (c.type === 'C') { const [x0, y0] = [px, py]; for (let t = 1; t <= 8; t++) { const u = t / 8; add((1 - u) ** 3 * x0 + 3 * (1 - u) ** 2 * u * c.x1 + 3 * (1 - u) * u * u * c.x2 + u ** 3 * c.x, (1 - u) ** 3 * y0 + 3 * (1 - u) ** 2 * u * c.y1 + 3 * (1 - u) * u * u * c.y2 + u ** 3 * c.y); } }
+    else if (c.type === 'Z') { if (cur.length > 2) contours.push(cur); cur = []; }
+  }
+  const area = (p) => p.reduce((s, [x, y], i) => { const [x2, y2] = p[(i + 1) % p.length]; return s + x * y2 - x2 * y; }, 0) / 2;
+  const inside = (pt, p) => { let r = false; for (let i = 0, j = p.length - 1; i < p.length; j = i++) { const [xi, yi] = p[i], [xj, yj] = p[j]; if ((yi > pt[1]) !== (yj > pt[1]) && pt[0] < (xj - xi) * (pt[1] - yi) / (yj - yi) + xi) r = !r; } return r; };
+  const clean = contours.map((p) => p.filter((q, i) => i === 0 || Math.hypot(q[0] - p[i - 1][0], q[1] - p[i - 1][1]) > 1e-4)).filter((p) => Math.abs(area(p)) > 1e-3);
+  const solids = [], holes = [];
+  for (const p of clean) (clean.filter((o) => o !== p && inside(p[0], o)).length % 2 ? holes : solids).push(polygon({ points: area(p) > 0 ? p : p.slice().reverse() }));
+  let g = union(solids);
+  if (holes.length) g = subtract(g, union(holes));
+  const [[a, b], [c, d]] = measurements.measureBoundingBox(g);
+  return translate([-(a + c) / 2, -(b + d) / 2, 0], g);
 }
 
-// ---------- lid (printed top face down) ----------
+// Snap clips: x = +-1 on the right/left walls (at y), y = +-1 on the top/bottom walls (at x). Kept clear of the USB, wheel and grille.
+const SNAPS = [['x', 1, -26], ['x', 1, 28], ['x', -1, -26], ['x', -1, 8], ['y', 1, 0], ['y', -1, 16]];
+
+function base() {
+  let s = body(0, zLid, C.edgeBottom, 0.01);
+  s = subtract(s, subtract(box(OW + 2, OD + 2, C.shadowH + 1, 0, 0, zLid - C.shadowH),
+    roundedRect(OW - 2 * C.shadowD, OD - 2 * C.shadowD, C.shadowH + 1, 0, 0, zLid - C.shadowH, C.corner - C.shadowD)));
+  let b = subtract(s, box(IW, ID, zLid, 0, 0, C.floor));
+  for (const [axis, side, pos] of SNAPS) {
+    const zg = zLid - C.lipH + 0.15, hg = C.lipH - 0.4, L = C.snapL + 1;
+    b = subtract(b, axis === 'x' ? box(C.grooveD * 2, L, hg, side * IW / 2, pos, zg) : box(L, C.grooveD * 2, hg, pos, side * ID / 2, zg));
+  }
+  // USB: pill-shaped opening in the bottom wall, in line with the NodeMCU's port
+  { const rr = C.usbH / 2, pin = (dx) => translate([dx, -OD / 2, usbZ], rotateX(Math.PI / 2, cylinder({ radius: rr, height: 2 * C.wall + 4, segments: 32 })));
+    b = subtract(b, hull(pin(-(C.usbW / 2 - rr)), pin(C.usbW / 2 - rr))); }
+  // side wheel: thumb scoop and the hole for the pot's threaded bushing
+  b = subtract(b, cylinder({ radius: C.scoopR, height: zLid + 2, center: [OW / 2 + C.scoopR - C.scoopD, P.pot.y, zLid / 2 - 1], segments: 96 }));
+  b = subtract(b, translate([OW / 2, P.pot.y, potZ], rotateY(Math.PI / 2, cylinder({ radius: P.pot.bushing / 2, height: 2 * C.wall + 4, segments: 32 }))));
+  // buzzer grille: 7 round holes in the left wall
+  for (const [dy, dz] of [[0, 0], [-3.2, 0], [3.2, 0], [-1.6, 2.8], [1.6, 2.8], [-1.6, -2.8], [1.6, -2.8]])
+    b = subtract(b, translate([-OW / 2, P.buzzer.y + dy, potZ + dz], rotateY(Math.PI / 2, cylinder({ radius: 0.9, height: 2 * C.wall + 4, segments: 16 }))));
+  return b;  // the breadboard fits the inside with 0.4 mm to spare; its sticky back holds it to the floor
+}
+
+// lid, built with z = 0 at its underside (then flipped to print top face down)
 function lid() {
-  let top = roundedCuboid({ size: [OW, OD, P.lid + 2 * P.corner], center: [0, 0, P.corner], roundRadius: P.corner, segments: 24 });
-  top = subtract(top, box(OW + 2, OD + 2, P.corner * 2, 0, 0, -P.corner * 2));      // flat underside
-  top = subtract(top, box(OW + 2, OD + 2, P.corner * 2, 0, 0, P.lid));              // flat top
-  // lid modelled with its top face at z = 0..lid; lip and pockets hang below (negative z)
-  const lw = P.innerW - 2 * P.fit, ld = P.innerD - 2 * P.fit;
-  let lip = subtract(box(lw, ld, P.lipH, 0, 0, -P.lipH), box(lw - 2 * P.lipT, ld - 2 * P.lipT, P.lipH + 2, 0, 0, -P.lipH - 1));
-  for (const [x, y] of postCenters) lip = subtract(lip, box(P.post + 1, P.post + 1, P.lipH + 2, x, y, -P.lipH - 1));
-  const parts = [top, lip];
-
-  const ring = (w, d, h, x, y) => subtract(box(w + 2.4, d + 2.4, h, x, y, -h), box(w, d, h + 2, x, y, -h - 1));
-  parts.push(ring(P.oledW, P.oledH, P.oledPocket, P.oledX, P.oledY));
-  for (const [x, y] of [P.btnMain, P.btnSecond]) parts.push(ring(P.btnBody, P.btnBody, P.btnPocket, x, y));
+  const lw = IW - 2 * C.fit, ld = ID - 2 * C.fit;
+  let lip = subtract(box(lw, ld, C.lipH, 0, 0, -C.lipH), box(lw - 2 * C.lipT, ld - 2 * C.lipT, C.lipH + 2, 0, 0, -C.lipH - 1));
+  lip = subtract(lip, box(6, P.pot.d + 6, C.lipH + 1, lw / 2, P.pot.y, -C.lipH - 1));   // room for the pot body at the right wall
+  const parts = [body(0, C.lid, C.seam, C.edgeTop), lip];
+  for (const [axis, side, pos] of SNAPS) {
+    const face = axis === 'x' ? lw / 2 : ld / 2, L = C.snapL;
+    const plate = (off, z0, z1) => axis === 'x' ? box(0.01, L, z1 - z0, side * (face + off), pos, z0) : box(L, 0.01, z1 - z0, pos, side * (face + off), z0);
+    parts.push(hull(plate(-0.3, -C.lipH + 0.2, -0.35), plate(C.snapH, -C.lipH + 0.75, -0.8)));
+  }
+  // OLED holder: a frame under the lid, open on the pin side; the glass presses against the lid underside
+  const o = P.oled, ocy = o.y - o.winOffY, fw = o.w + 0.4, fd = o.d + 0.4;
+  let frame = subtract(box(fw + 2.4, fd + 2.4, o.t, 0, ocy, -o.t), box(fw, fd, o.t + 2, 0, ocy, -o.t - 1));
+  frame = subtract(frame, box(fw - 6, 4, o.t + 2, 0, ocy + fd / 2, -o.t - 1));
+  parts.push(frame);
+  // button bosses: a ring under each cap hole; the button holder (separate print) is glued under it
+  for (const k of ['main', 'second']) { const c = P.caps[k]; parts.push(subtract(cyl(c.d + 6, C.boss, c.x, c.y, -C.boss), cyl(c.d + 2.8, C.boss + 2, c.x, c.y, -C.boss - 1))); }
   let l = union(parts);
+  // screen window with a bevel, inside a shallow bezel that reads as a glass panel
+  l = subtract(l, roundedRect(C.bezelW, C.bezelD, C.bezelDepth + 1, 0, o.y, C.lid - C.bezelDepth, 3));
+  l = subtract(l, box(o.winW, o.winD, C.lid + 2, 0, o.y, -1));
+  l = subtract(l, hull(box(o.winW, o.winD, 0.01, 0, o.y, C.lid - C.bezelDepth - C.bevel), box(o.winW + 2 * C.bevel, o.winD + 2 * C.bevel, 0.01, 0, o.y, C.lid - C.bezelDepth + 0.01)));
+  for (const k of ['main', 'second']) {  // round button openings with a soft chamfer
+    const c = P.caps[k], hole = c.d + C.capClear;
+    l = subtract(l, cyl(hole, C.lid + 2, c.x, c.y, -1));
+    l = subtract(l, hull(cyl(hole, 0.01, c.x, c.y, C.lid - 0.6), cyl(hole + 2.2, 0.01, c.x, c.y, C.lid + 0.5)));
+  }
+  let name = null;
+  const nm = textShape(LOGO.text, LOGO.cap);
+  if (nm) {
+    const placed = translate([0, LOGO.y, 0], nm);
+    l = subtract(l, translate([0, 0, C.lid - LOGO.depth], extrudeLinear({ height: LOGO.depth + 1 }, placed)));
+    name = translate([0, 0, C.lid - LOGO.depth], extrudeLinear({ height: LOGO.depth }, placed));
+  }
+  return { lid: l, name };
+}
+const flip = (g) => translate([0, 0, C.lid], rotateX(Math.PI, g));   // print the lid top face down
+const toWorld = (g) => translate([0, 0, zLid], g);                  // closed position
 
-  l = subtract(l, box(P.winW, P.winH, P.lid + 2, P.oledX, P.oledY + P.winOffY, -1));
-  for (const [x, y] of [P.btnMain, P.btnSecond]) l = subtract(l, hole(P.btnHole, P.lid + 2, x, y, -1));
-  l = subtract(l, hole(P.knobHole, P.lid + 2, P.knob[0], P.knob[1], -1));
-  for (const [x, y] of postCenters) l = subtract(l, hole(P.screwHole, P.lid + 2, x, y, -1));
-  // flip so the top face is on the print bed (z = 0) and the lip points up
-  return translate([0, 0, P.lid], transforms.rotateX(Math.PI, l));  // a rotation, not a mirror, so holes still match the base
+// Button cap (lid coordinates): flange under the lid, body through the hole, post down onto the switch stem
+const stemTop = -C.boss + 0.3;   // the holder plate sits at -boss, the stem pokes 0.3 mm through it
+function buttonCap(d) {
+  const top = C.lid + C.capRise;
+  return union(cyl(d + 2, C.flangeT, 0, 0, -C.flangeT), cyl(3, C.flangeT - stemTop, 0, 0, stemTop),
+    hull(cyl(d, top - 0.9, 0, 0, 0), cyl(d - 1.2, top - 0.3, 0, 0, 0), cyl(d - 3, top, 0, 0, 0)));
+}
+// Button holder (lid coordinates, glued under the boss): a plate with a hole for the stem, and a socket the switch is glued into
+function buttonHolder(d) {
+  const plateT = 1.2, sock = P.btn.body + 0.5, sockH = P.btn.bodyH;
+  let h = union(cyl(d + 6, plateT, 0, 0, -C.boss - plateT), box(sock + 2.4, sock + 2.4, sockH, 0, 0, -C.boss - plateT - sockH));
+  h = subtract(h, cyl(P.btn.stem + 0.7, plateT + 2, 0, 0, -C.boss - plateT - 1));
+  h = subtract(h, box(sock, sock, sockH + 0.01, 0, 0, -C.boss - plateT - sockH - 0.01));
+  return h;
+}
+// Side wheel: a knurled knob pressed on the pot's D-shaft, outside the right wall
+function wheelKnob() {
+  const d = 20, t = 8, bore = 7;
+  let k = cylinder({ radius: d / 2, height: t, center: [0, 0, t / 2], segments: 96 });
+  for (let i = 0; i < 36; i++) { const a = (i / 36) * 2 * Math.PI; k = subtract(k, cylinder({ radius: 0.55, height: t + 2, center: [Math.cos(a) * d / 2, Math.sin(a) * d / 2, t / 2], segments: 10 })); }
+  const shaft = intersect(cylinder({ radius: P.pot.shaft / 2 + 0.1, height: bore + 1, center: [0, 0, (bore + 1) / 2 - 1], segments: 32 }),
+    box(P.pot.shaft + 2, P.pot.shaft + 2, bore + 1, 0, P.pot.flat + 0.1 - (P.pot.shaft + 2) / 2 - P.pot.shaft / 2, -1));
+  return subtract(k, shaft);   // blind D-hole, flat side down; print with the hole facing up
 }
 
-// ---------- drawing (SVG, editable in Figma) ----------
-function drawing() {
-  const s = 5, pad = 40, W = OW * s, D = OD * s;
-  const X = (x) => pad + (x + OW / 2) * s, Y = (y) => pad + (OD / 2 - y) * s;
-  const r = (x, y, w, h, extra) => `<rect x="${X(x - w / 2)}" y="${Y(y + h / 2)}" width="${w * s}" height="${h * s}" ${extra}/>`;
-  const c = (x, y, d, extra) => `<circle cx="${X(x)}" cy="${Y(y)}" r="${d / 2 * s}" ${extra}/>`;
-  const t = (x, y, txt, extra = '') => `<text x="${X(x)}" y="${Y(y)}" ${extra}>${txt}</text>`;
-  const sideY = pad + D + 90, SH = (BH + P.lid) * s;
+// Preview of what goes inside (for the fit check and for viewing): breadboard, NodeMCU, OLED, pot, buzzer
+function insidePreview() {
+  const n = P.node, o = P.oled;
+  return union(
+    box(P.bb.w, P.bb.d, P.bb.h, 0, 0, C.floor),
+    box(n.w, n.d, n.pcb + n.h, 0, n.y0 + n.d / 2, zNode),
+    box(o.w, o.d, 1.6 + 1.4, 0, o.y - o.winOffY, zLid - 3.0),
+    translate([OW / 2 - C.wall - P.pot.depth / 2, P.pot.y, potZ], rotateY(Math.PI / 2, cylinder({ radius: P.pot.d / 2, height: P.pot.depth, segments: 32 }))),
+    translate([-OW / 2 + C.wall + 5, P.buzzer.y, potZ], rotateY(Math.PI / 2, cylinder({ radius: P.buzzer.d / 2, height: 9.5, segments: 32 }))));
+}
+
+function drawingSvg() {
+  const s = 6, pad = 40, X = (x) => pad + (x + OW / 2) * s, Y = (y) => pad + (OD / 2 - y) * s;
+  const o = P.oled;
+  let g = `<rect x="${X(-OW / 2)}" y="${Y(OD / 2)}" width="${OW * s}" height="${OD * s}" rx="${C.corner * s}" fill="#2b2b2e" stroke="#888"/>`;
+  g += `<rect x="${X(-C.bezelW / 2)}" y="${Y(o.y + C.bezelD / 2)}" width="${C.bezelW * s}" height="${C.bezelD * s}" rx="18" fill="#0d0d0f"/>`;
+  g += `<rect x="${X(-o.winW / 2)}" y="${Y(o.y + o.winD / 2)}" width="${o.winW * s}" height="${o.winD * s}" fill="#0b2a3a" stroke="#4da3ff"/>`;
+  for (const k of ['main', 'second']) { const c = P.caps[k]; g += `<circle cx="${X(c.x)}" cy="${Y(c.y)}" r="${c.d / 2 * s}" fill="${k === 'main' ? '#bdbdc2' : '#111'}" stroke="#666"/>`; }
+  g += `<rect x="${X(OW / 2)}" y="${Y(P.pot.y + 10)}" width="${8 * s}" height="${20 * s}" rx="6" fill="#111" stroke="#666"/>`;
+  g += `<text x="${X(0)}" y="${Y(LOGO.y) + 7}" text-anchor="middle" font-size="22" letter-spacing="6" fill="#9a9aa0">XONRA</text>`;
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W + 2 * pad + 260} ${sideY + SH + 80}" font-family="Inter, Arial, sans-serif" font-size="13">
-<title>xonraOS case drawing</title>
-<rect width="100%" height="100%" fill="#000"/>
-<text x="${pad}" y="26" font-size="18" font-weight="700" fill="#fff">xonraOS case — top of lid (${OW} × ${OD} mm)</text>
-<rect x="${pad}" y="${pad}" width="${W}" height="${D}" rx="${P.corner * s}" fill="#1c1c1c" stroke="#ddd" stroke-width="2"/>
-${r(P.oledX, P.oledY, P.oledW, P.oledH, 'fill="none" stroke="#555" stroke-dasharray="6 4"')}
-${r(P.oledX, P.oledY + P.winOffY, P.winW, P.winH, 'fill="#0b3d5c" stroke="#4da3ff" stroke-width="2"')}
-${t(P.oledX - 7, P.oledY + P.winOffY - 1, 'OLED', 'fill="#7fdbff"')}
-${c(P.btnMain[0], P.btnMain[1], 8, 'fill="#4da3ff"')}${t(P.btnMain[0] - 4, P.btnMain[1] - 7, 'D7 main', 'fill="#ddd"')}
-${c(P.btnSecond[0], P.btnSecond[1], 8, 'fill="#4da3ff"')}${t(P.btnSecond[0] - 4, P.btnSecond[1] - 7, 'D6', 'fill="#ddd"')}
-${c(P.knob[0], P.knob[1], 16, 'fill="#333" stroke="#ddd" stroke-width="2"')}${c(P.knob[0], P.knob[1], P.knobHole, 'fill="#000"')}${t(P.knob[0] - 4, P.knob[1] - 11, 'Knob', 'fill="#ddd"')}
-${postCenters.map(([x, y]) => c(x, y, P.screwHole, 'fill="#000" stroke="#888"')).join('')}
-${r(P.nodeX + P.nodeL / 2, -P.innerD / 2 + 0.4 + P.nodeW / 2, P.nodeL, P.nodeW, 'fill="none" stroke="#e9c46a" stroke-dasharray="3 4"')}
-${t(P.nodeX + 3, -P.innerD / 2 + 4, 'NodeMCU inside (upside down)', 'fill="#e9c46a" font-size="11"')}
-<g fill="#aaa" font-size="12">
-<text x="${pad + W + 24}" y="${pad + 20}" fill="#fff" font-weight="700">Holes</text>
-<text x="${pad + W + 24}" y="${pad + 44}">Screen window ${P.winW} × ${P.winH}</text>
-<text x="${pad + W + 24}" y="${pad + 64}">Buttons Ø${P.btnHole} (6×6 tall stem)</text>
-<text x="${pad + W + 24}" y="${pad + 84}">Knob Ø${P.knobHole} (panel pot)</text>
-<text x="${pad + W + 24}" y="${pad + 104}">Screws Ø${P.screwHole} (M3)</text>
-<text x="${pad + W + 24}" y="${pad + 124}">USB ${P.usbW} × ${P.usbH} (left side)</text>
-<text x="${pad + W + 24}" y="${pad + 144}">Sound slots (left side)</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${OW * s + 2 * pad + 300} ${OD * s + 2 * pad}" font-family="Inter, Arial, sans-serif">
+<title>xonraOS NodeMCU case</title>
+<rect width="100%" height="100%" fill="#f4f4f5"/>
+${g}
+<g font-size="14" fill="#333">
+<text x="${X(OW / 2) + 70}" y="${pad + 20}" font-weight="700">xonraOS case (NodeMCU + OLED)</text>
+<text x="${X(OW / 2) + 70}" y="${pad + 46}">Outside ${OW.toFixed(1)} × ${OD.toFixed(1)} × ${H.toFixed(1)} mm</text>
+<text x="${X(OW / 2) + 70}" y="${pad + 70}">Screen window ${o.winW} × ${o.winD} mm</text>
+<text x="${X(OW / 2) + 70}" y="${pad + 94}">Buttons ${P.caps.main.d} and ${P.caps.second.d} mm caps</text>
+<text x="${X(OW / 2) + 70}" y="${pad + 118}">Side wheel: knob on a 16 mm pot</text>
+<text x="${X(OW / 2) + 70}" y="${pad + 142}">USB at the bottom, buzzer grille on the left</text>
 </g>
-<text x="${pad}" y="${sideY - 14}" font-size="16" font-weight="700" fill="#fff">Left side (${OD} × ${BH + P.lid} mm)</text>
-<rect x="${pad}" y="${sideY}" width="${D}" height="${SH}" rx="6" fill="#1c1c1c" stroke="#ddd" stroke-width="2"/>
-<line x1="${pad}" y1="${sideY + P.lid * s}" x2="${pad + D}" y2="${sideY + P.lid * s}" stroke="#555"/>
-${(() => { const yc = -P.innerD / 2 + 0.4 + P.nodeW / 2, zc = P.floor + P.nodeLift + 1.5 - P.usbH / 2;
-  const sx = (y) => pad + (y + OD / 2) * s, sz = (z) => sideY + SH - z * s; // viewed from the left: front (−y) on the left
-  let out = `<rect x="${sx(yc - P.usbW / 2)}" y="${sz(zc + P.usbH)}" width="${P.usbW * s}" height="${P.usbH * s}" fill="#000" stroke="#4da3ff" stroke-width="2"/><text x="${sx(yc - 3)}" y="${sz(zc) + 18}" fill="#7fdbff">USB</text>`;
-  for (let i = 0; i < P.slots; i++) { const y = P.slotY - (P.slots - 1) * 1.6 + i * 3.2;
-    out += `<rect x="${sx(y - P.slotW / 2)}" y="${sz(P.slotZ + P.slotH / 2)}" width="${P.slotW * s}" height="${P.slotH * s}" fill="#000" stroke="#888"/>`; }
-  return out + `<text x="${sx(P.slotY - 7)}" y="${sz(P.slotZ + P.slotH / 2) - 8}" fill="#aaa">buzzer</text>`; })()}
 </svg>`;
 }
 
-const out = __dirname;
 const write = (name, geom) => {
-  fs.writeFileSync(path.join(out, name), Buffer.concat(stl.serialize({ binary: true }, geom).map((a) => Buffer.from(a))));
-  const [[a, b, c], [d, e, f]] = measureBoundingBox(geom);
-  console.log(`${name}: ${(d - a).toFixed(1)} x ${(e - b).toFixed(1)} x ${(f - c).toFixed(1)} mm, ${(measureVolume(geom) / 1000).toFixed(1)} cm3`);
+  fs.writeFileSync(path.join(__dirname, name), Buffer.concat(stl.serialize({ binary: true }, geom).map((a) => Buffer.from(a))));
+  const [[a, b, c], [d, e, f]] = measurements.measureBoundingBox(geom);
+  console.log(`${name}: ${(d - a).toFixed(1)} x ${(e - b).toFixed(1)} x ${(f - c).toFixed(1)} mm, ${(measurements.measureVolume(geom) / 1000).toFixed(1)} cm3`);
 };
-write('base.stl', base());
-write('lid.stl', lid());
-fs.writeFileSync(path.join(out, 'case-drawing.svg'), drawing());
-console.log('case-drawing.svg written');
+const B = base(), L = lid();
+write('base.stl', B);
+write('lid.stl', flip(L.lid));
+if (L.name) write('lid-name.stl', flip(L.name));
+for (const k of ['main', 'second']) {
+  const d = P.caps[k].d;
+  write(`button-cap-${k}.stl`, translate([0, 0, C.lid + C.capRise], rotateX(Math.PI, buttonCap(d))));  // top face down on the bed
+  write(`button-holder-${k}.stl`, translate([0, 0, -C.boss], rotateX(Math.PI, buttonHolder(d))));       // plate on the bed, socket up
+}
+write('wheel-knob.stl', wheelKnob());
+write('inside-preview.stl', insidePreview());
+fs.writeFileSync(path.join(__dirname, 'case-drawing.svg'), drawingSvg());
+console.log(`case outside: ${OW.toFixed(1)} x ${OD.toFixed(1)} x ${H.toFixed(1)} mm`);
+
+if (process.env.CHECK) {
+  const lidW = toWorld(L.lid);
+  const capsW = union(['main', 'second'].map((k) => { const c = P.caps[k]; return toWorld(translate([c.x, c.y, 0], buttonCap(c.d))); }));
+  const holdersW = union(['main', 'second'].map((k) => { const c = P.caps[k]; return toWorld(translate([c.x, c.y, 0], buttonHolder(c.d))); }));
+  const items = { inside: insidePreview(), caps: capsW, holders: holdersW };
+  for (const [n, g] of Object.entries(items)) for (const [sn, sg] of Object.entries({ base: B, lid: lidW })) {
+    if (n === 'holders' && sn === 'lid') continue;  // glued to the lid on purpose
+    const v = measurements.measureVolume(intersect(g, sg));
+    console.log(`fit check: ${n} vs ${sn}: ${v < 0.05 ? 'clear' : v.toFixed(2) + ' mm3 overlap'}`);
+  }
+  for (const [a, b, n] of [[capsW, holdersW, 'caps vs holders'], [holdersW, insidePreview(), 'holders vs inside'], [lidW, B, 'lid vs base']]) {
+    const v = measurements.measureVolume(intersect(a, b));
+    console.log(`fit check: ${n}: ${v < 0.05 ? 'clear' : v.toFixed(2) + ' mm3 overlap'}`);
+  }
+}

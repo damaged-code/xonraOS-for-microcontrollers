@@ -1,29 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 682.5" font-family="Inter, Arial, sans-serif" font-size="13">
-<title>xonraOS case drawing</title>
-<rect width="100%" height="100%" fill="#000"/>
-<text x="40" y="26" font-size="18" font-weight="700" fill="#fff">xonraOS case — top of lid (80 × 56 mm)</text>
-<rect x="40" y="40" width="400" height="280" rx="15" fill="#1c1c1c" stroke="#ddd" stroke-width="2"/>
-<rect x="85.5" y="99.5" width="139" height="141" fill="none" stroke="#555" stroke-dasharray="6 4"/>
-<rect x="92.5" y="142.5" width="125" height="70" fill="#0b3d5c" stroke="#4da3ff" stroke-width="2"/>
-<text x="120" y="182.5" fill="#7fdbff">OLED</text>
-<circle cx="395" cy="245" r="20" fill="#4da3ff"/><text x="375" y="280" fill="#ddd">D7 main</text>
-<circle cx="335" cy="245" r="20" fill="#4da3ff"/><text x="315" y="280" fill="#ddd">D6</text>
-<circle cx="370" cy="120" r="40" fill="#333" stroke="#ddd" stroke-width="2"/><circle cx="370" cy="120" r="18.5" fill="#000"/><text x="350" y="175" fill="#ddd">Knob</text>
-<circle cx="65" cy="65" r="8.5" fill="#000" stroke="#888"/><circle cx="415" cy="65" r="8.5" fill="#000" stroke="#888"/><circle cx="415" cy="295" r="8.5" fill="#000" stroke="#888"/>
-<rect x="58.00000000000001" y="174.5" width="247.5" height="133.5" fill="none" stroke="#e9c46a" stroke-dasharray="3 4"/>
-<text x="73" y="290" fill="#e9c46a" font-size="11">NodeMCU inside (upside down)</text>
-<g fill="#aaa" font-size="12">
-<text x="464" y="60" fill="#fff" font-weight="700">Holes</text>
-<text x="464" y="84">Screen window 25 × 14</text>
-<text x="464" y="104">Buttons Ø4 (6×6 tall stem)</text>
-<text x="464" y="124">Knob Ø7.4 (panel pot)</text>
-<text x="464" y="144">Screws Ø3.4 (M3)</text>
-<text x="464" y="164">USB 12 × 9 (left side)</text>
-<text x="464" y="184">Sound slots (left side)</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 738.8 603.8" font-family="Inter, Arial, sans-serif">
+<title>xonraOS NodeMCU case</title>
+<rect width="100%" height="100%" fill="#f4f4f5"/>
+<rect x="40" y="40" width="358.79999999999995" height="523.8" rx="30" fill="#2b2b2e" stroke="#888"/><rect x="111.39999999999999" y="97.89999999999999" width="216" height="144" rx="18" fill="#0d0d0f"/><rect x="150.39999999999998" y="132.39999999999998" width="138" height="75" fill="#0b2a3a" stroke="#4da3ff"/><circle cx="285.4" cy="361.9" r="48" fill="#bdbdc2" stroke="#666"/><circle cx="153.39999999999998" cy="361.9" r="36" fill="#111" stroke="#666"/><rect x="398.79999999999995" y="229.89999999999998" width="48" height="120" rx="6" fill="#111" stroke="#666"/><text x="219.39999999999998" y="476.90000000000003" text-anchor="middle" font-size="22" letter-spacing="6" fill="#9a9aa0">XONRA</text>
+<g font-size="14" fill="#333">
+<text x="468.79999999999995" y="60" font-weight="700">xonraOS case (NodeMCU + OLED)</text>
+<text x="468.79999999999995" y="86">Outside 59.8 × 87.3 × 37.6 mm</text>
+<text x="468.79999999999995" y="110">Screen window 23 × 12.5 mm</text>
+<text x="468.79999999999995" y="134">Buttons 16 and 12 mm caps</text>
+<text x="468.79999999999995" y="158">Side wheel: knob on a 16 mm pot</text>
+<text x="468.79999999999995" y="182">USB at the bottom, buzzer grille on the left</text>
 </g>
-<text x="40" y="396" font-size="16" font-weight="700" fill="#fff">Left side (56 × 38.5 mm)</text>
-<rect x="40" y="410" width="280" height="192.5" rx="6" fill="#1c1c1c" stroke="#ddd" stroke-width="2"/>
-<line x1="40" y1="422.5" x2="320" y2="422.5" stroke="#555"/>
-<rect x="88.75" y="535" width="60" height="45" fill="#000" stroke="#4da3ff" stroke-width="2"/><text x="103.75" y="598" fill="#7fdbff">USB</text><rect x="219" y="482.5" width="8" height="60" fill="#000" stroke="#888"/><rect x="235" y="482.5" width="8" height="60" fill="#000" stroke="#888"/><rect x="251" y="482.5" width="8" height="60" fill="#000" stroke="#888"/><rect x="267" y="482.5" width="8" height="60" fill="#000" stroke="#888"/><rect x="283" y="482.5" width="8" height="60" fill="#000" stroke="#888"/><text x="220" y="474.5" fill="#aaa">buzzer</text>
 </svg>

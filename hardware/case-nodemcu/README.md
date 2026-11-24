@@ -1,57 +1,62 @@
-# xonraOS printable case
+# xonraOS case for the NodeMCU build (0 SAR in parts)
 
-A two-part desk case for the build without a breadboard: NodeMCU, 0.96" OLED, two buttons, buzzer and knob, wired with jumper wires.
+A case for the build most people already have: **NodeMCU on a breadboard, 0.96" OLED, two 6×6 mm buttons, a buzzer
+and a 16 mm knob potentiometer**, connected with male-to-female jumper wires. Nothing to buy except the print.
 
-| File | What it is |
-|---|---|
-| `base.stl` | the box: holds the NodeMCU, has the USB opening and sound slots |
-| `lid.stl` | the top: screen window, two button holes, knob hole |
-| `case-drawing.svg` | top and side drawing with hole sizes (opens in Figma) |
-| `xonra-case.js` | the editable model. Change a number, run it, get new STL files |
+Same look as the custom-board case in `../case`: rounded edges, a shadow line where the lid meets the base, a
+snap-fit lid (no screws), big round buttons, a scroll wheel on the right side and **XONRA** on the front.
 
-Outside size: **80 × 56 × 38.5 mm**. Uses about 45 g of filament.
+Outside size: **59.8 × 87.3 × 37.6 mm**. It is thick because jumper wires need room. A soldered build can be much thinner (see `../carrier`).
+
+| File | Print | What it is |
+|---|---|---|
+| `base.stl` | 1 | the box: holds the breadboard, USB opening at the bottom, buzzer grille on the left, wheel hole on the right |
+| `lid.stl` | 1 | the top: screen window, button holes, OLED holder underneath (already lying top face down) |
+| `button-cap-main.stl`, `button-cap-second.stl` | 1 each | big round caps (main 16 mm, second 12 mm) |
+| `button-holder-main.stl`, `button-holder-second.stl` | 1 each | hold the 6×6 buttons under the caps; glued under the lid |
+| `wheel-knob.stl` | 1 | knurled wheel that presses onto the pot's shaft |
+| `lid-name.stl` | optional | the XONRA letters, for a second colour |
+| `inside-preview.stl` | no | the parts inside, for viewing only |
+| `case-drawing.svg` | — | top view with sizes (opens in Figma) |
+| `xonra-case.js` | — | the editable model |
 
 ## Print it
 
-- **Material:** PLA or PETG. **Layer height** 0.2 mm, **infill** 15–20 %, **no supports**.
-- **Base:** open side up. **Lid:** already lying top face down in the file. Print it exactly as it loads.
-- Time: about 3–4 hours for both parts on a normal printer.
-
-## Parts to buy for the case
-
-| Part | Note |
-|---|---|
-| 2 × tactile buttons **6×6 mm with a tall stem (12 or 13 mm)** | short breadboard buttons don't reach through the lid |
-| 10k **panel** potentiometer (B10K, 16 mm, with nut) + a knob cap | small breadboard trim-pots don't fit the hole |
-| 3 × M3 screws, 8 mm (self-tapping) | optional: the lid also holds by friction |
-| Female-to-female jumper wires | the NodeMCU's pins point up inside |
-| Hot glue | holds the screen, buttons and buzzer |
+- **Colours:** matte black or dark grey for base and lid; light grey for the main cap; black for the rest.
+- PLA or PETG, 0.2 mm layers, 15–20 % infill, **no supports**. Print every part exactly as it loads.
+- Cheap options: anyone with a 3D printer, or a Haraj printing seller (often 20–40 SAR for parts this size).
 
 ## Put it together
 
-1. **Screen:** press the OLED, face down, into the frame under the lid so the screen sits in the window. Pins toward the back. Add a dot of hot glue at each corner.
-2. **Buttons:** push each button into its square pocket under the lid so the stem comes out of the hole, then glue. The right hole is the main button (D7), the left one is D6.
-3. **Knob:** push the potentiometer through the round hole from below, tighten its nut on top, put the knob cap on.
-4. **Buzzer:** glue it inside the left wall, against the sound slots.
-5. **NodeMCU:** lay it **upside down** (pins pointing up) on the four little blocks, with the USB port in the opening on the left.
-6. **Wire** everything exactly as in the wiring table (`docs/wiring-table.svg`), using female-to-female wires on the pins.
-7. Close the lid and add the 3 screws.
+1. **Breadboard:** peel the backing and stick your breadboard to the floor of the base, with the NodeMCU's USB
+   end at the **bottom** (next to the opening). Push the NodeMCU as close to that end as it goes.
+2. **Screen:** put the OLED face up into the frame under the lid (pins toward the top end), so the screen shows
+   through the window. A dot of hot glue at two corners. Female ends of the jumper wires go on its pins.
+3. **Buttons:** drop each cap into its hole from underneath (the flange stops it). Glue a 6×6 button into the
+   square socket of its holder, stem through the small hole, then glue the holder onto the ring under the lid.
+   Bend the button legs sideways and put the female wire ends on them.
+4. **Wheel:** push the potentiometer's threaded part through the hole in the right side from inside, tighten its
+   nut outside, and press the wheel knob onto the shaft (flat side matching).
+5. **Buzzer:** hot-glue it inside the left wall, behind the small holes.
+6. Plug the male wire ends into the breadboard exactly as before (wiring: `docs/wiring-table.svg`).
+7. Close the lid: it clicks in. To open, push a fingernail into the seam at the bottom end and lift.
 
 ## Before you print: measure
 
-Parts from different sellers differ by a millimetre or two. Measure yours and change these values at the top of `xonra-case.js` if needed:
+Change these at the top of `xonra-case.js` (block `P`), then run it again:
 
-- `nodeL`, `nodeW`: NodeMCU length and width (the CH340 "V3" board is bigger, about 58 × 31 mm).
-- `oledW`, `oledH`, `winOffY`: OLED board size and where the screen sits on it.
-- `fit`: raise it to 0.35 if the lid is too tight, lower it if it is loose.
-
-Then rebuild:
+- `bb`: breadboard size (default the 400-point half size, 82.5 × 55 × 8.5 mm).
+- `node`: NodeMCU size (default the CH340 "v3", 58 × 31.5 mm; the "Amica" CP2102 one is 49 × 26).
+- `oled`: module size and where the picture sits (`winOffY`).
+- `btn`: your button's body and total height (6×6×5 mm by default).
+- `pot`: the knob pot (WH148-style: 16 mm body, 7 mm thread, 6 mm D-shaft).
 
 ```
-npm install @jscad/modeling@2.12.5 @jscad/stl-serializer@2.1.20
-node xonra-case.js
+npm install @jscad/modeling@2.12.5 @jscad/stl-serializer@2.1.20 opentype.js@1.3.4
+CHECK=1 node xonra-case.js
 ```
 
-The model was checked on screen (parts, holes and lid alignment). **It has not been printed yet**, so print the lid first (it's quick) and test-fit the screen and buttons.
+The fit check (parts inside vs base and lid, caps, holders) passes. **It has not been printed yet**: print the lid
+first and test the screen and buttons.
 
 License: CERN-OHL-S-2.0, same as the rest of `hardware/`.
