@@ -20,13 +20,14 @@ const { hull } = require('@jscad/modeling').hulls;
 
 // ---------- your parts (measure them) ----------
 const P = {
-  bb: { w: 55, d: 82.5, h: 8.5 },                    // 400-point "half" breadboard, lying flat, long side along y
-  node: { w: 31.5, d: 58, y0: -40.6, lift: 2.5, pcb: 1.6, h: 4.0 },  // NodeMCU v3 on the breadboard, USB end at the bottom (y0)
-  oled: { w: 27.6, d: 28.0, t: 3.0, y: 22, winW: 23, winD: 12.5, winOffY: 1.0 },  // 0.96" module; window centre = module centre + winOffY (towards the pins)
-  btn: { body: 6.0, bodyH: 3.5, total: 5.0, stem: 3.5 },  // 6x6 tactile switch: body height and total height including the stem
-  caps: { main: { x: 11, y: -10, d: 16 }, second: { x: -11, y: -10, d: 12 } },
-  pot: { y: 2, d: 16.5, depth: 9.5, bushing: 7.4, shaft: 6, flat: 4.5 },   // WH148-style 16 mm pot, 7 mm bushing, 6 mm D-shaft, through the right wall
-  buzzer: { y: 26, d: 12 },                          // 12 mm buzzer glued inside the left wall, behind a grille
+  // measured by the owner (Nov 2026): breadboard 83 x 35, NodeMCU 50 x 25, OLED board ~28 x 28, 12 x 12 buttons, knob 15 mm body
+  bb: { w: 35, d: 83, h: 8.5 },                      // narrow breadboard, lying flat, long side along y
+  node: { w: 25.5, d: 50, y0: -41.2, lift: 2.5, pcb: 1.6, h: 4.0 },  // NodeMCU "Amica" on the breadboard, USB end at the bottom (y0)
+  oled: { w: 28.0, d: 28.0, t: 3.0, y: 22, winW: 23, winD: 12.5, winOffY: 1.0 },  // 0.96" module; window centre = module centre + winOffY (towards the pins)
+  btn: { body: 12.0, bodyH: 4.3, total: 7.3, stem: 4.8 },  // 12x12 tactile switch (take its coloured cap off): body height, total height, stem hole
+  caps: { main: { x: 0, y: -6, d: 16 }, second: { x: 0, y: -27, d: 12 } },   // one above the other, iPod-style
+  pot: { y: 22, d: 15.5, depth: 10, bushing: 7.6, shaft: 6, flat: 6 },    // 15 mm pot, ~7 mm threaded part through the right wall (hole 7.6), 6 mm shaft (flat: 6 = round)
+  buzzer: { y: 22, d: 12 },                          // 12 mm buzzer glued inside the left wall, behind a grille
 };
 const LOGO = { text: 'XONRA', font: 'C:/Windows/Fonts/ENGR.TTF', cap: 3.6, y: -28, depth: 0.5, front: false, bottom: false };  // front / bottom: engrave the name there
 
@@ -35,17 +36,18 @@ const C = {
   gap: 0.4, wall: 2.0, floor: 1.6, inner: 34, corner: 6,
   edgeBottom: 3.0, edgeTop: 2.0, seam: 0.4, shadowH: 0.8, shadowD: 0.5,   // big soft bottom edge makes the box look thinner
   accentZ: 7, accentH: 1.0, accentD: 0.5,                                  // styling line around the base
-  panelW: 38, panelD: 27, panelR: 3, ledge: 0.6,                           // glossy black screen panel set into the lid
+  panelW: 31, panelD: 26, panelR: 3, ledge: 0.6,                           // glossy black screen panel set into the lid
   ring: 0.4,                                                               // depth of the trim ring around each button
-  usbRecessW: 17, usbRecessH: 12, usbRecessD: 0.8,                         // rounded pocket around the USB opening
-  feetD: 8.2, feetDepth: 0.8, feetInset: 9,                                // pockets for 8 mm stick-on rubber feet
+  usbRecessW: 15, usbRecessH: 11, usbRecessD: 0.8,                         // rounded pocket around the USB opening
+  feetD: 8.2, feetDepth: 0.8, feetInset: 8,                                // pockets for 8 mm stick-on rubber feet
   bottomCap: 6,                                                            // XONRA under the base
   lid: 2.0, lipH: 2.5, lipT: 1.2, fit: 0.25, snapH: 0.6, snapL: 8, grooveD: 0.75,
   usbW: 12, usbH: 8,                    // opening for the micro-USB plug body
   scoopR: 16, scoopD: 1.0,              // thumb scoop around the wheel
   bevel: 1,
-  capClear: 0.6, capRise: 1.2, flangeT: 0.8, boss: 3.0,
+  capClear: 0.6, capRise: 1.2, flangeT: 0.8,
 };
+C.boss = Math.max(3, P.btn.total - P.btn.bodyH + 0.5);   // room under the lid for the cap flange and the switch stem
 
 const segs = 48;
 const IW = P.bb.w + 2 * C.gap, ID = P.bb.d + 2 * C.gap;
@@ -96,7 +98,7 @@ function textShape(text, capH) {
 }
 
 // Snap clips: x = +-1 on the right/left walls (at y), y = +-1 on the top/bottom walls (at x). Kept clear of the USB, wheel and grille.
-const SNAPS = [['x', 1, -26], ['x', 1, 28], ['x', -1, -26], ['x', -1, 8], ['y', 1, 0], ['y', -1, 16]];
+const SNAPS = [['x', 1, -26], ['x', 1, 0], ['x', -1, -26], ['x', -1, 0], ['y', 1, 0], ['y', -1, 12.5]];
 
 function base() {
   let s = body(0, zLid, C.edgeBottom, 0.01);
@@ -178,7 +180,7 @@ const flip = (g) => translate([0, 0, C.lid], rotateX(Math.PI, g));   // print th
 const toWorld = (g) => translate([0, 0, zLid], g);                  // closed position
 
 // Button cap (lid coordinates): flange under the lid, body through the hole, post down onto the switch stem
-const stemTop = -C.boss + 0.3;   // the holder plate sits at -boss, the stem pokes 0.3 mm through it
+const stemTop = -C.boss - 1.2 + (P.btn.total - P.btn.bodyH);   // the holder plate sits at -boss; the stem pokes up through it
 function buttonCap(d) {
   const top = C.lid + C.capRise;
   return union(cyl(d + 2, C.flangeT, 0, 0, -C.flangeT), cyl(3, C.flangeT - stemTop, 0, 0, stemTop),
@@ -188,7 +190,7 @@ function buttonCap(d) {
 function buttonHolder(d) {
   const plateT = 1.2, sock = P.btn.body + 0.5, sockH = P.btn.bodyH;
   let h = union(cyl(d + 6, plateT, 0, 0, -C.boss - plateT), box(sock + 2.4, sock + 2.4, sockH, 0, 0, -C.boss - plateT - sockH));
-  h = subtract(h, cyl(P.btn.stem + 0.7, plateT + 2, 0, 0, -C.boss - plateT - 1));
+  h = subtract(h, cyl(P.btn.stem, plateT + 2, 0, 0, -C.boss - plateT - 1));
   h = subtract(h, box(sock, sock, sockH + 0.01, 0, 0, -C.boss - plateT - sockH - 0.01));
   return h;
 }

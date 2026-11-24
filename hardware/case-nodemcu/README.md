@@ -1,19 +1,19 @@
 # xonraOS case for the NodeMCU build (0 SAR in parts)
 
-A case for the build most people already have: **NodeMCU on a breadboard, 0.96" OLED, two 6×6 mm buttons, a buzzer
+A case for the build most people already have: **NodeMCU on a breadboard, 0.96" OLED, two 12×12 mm buttons, a buzzer
 and a 16 mm knob potentiometer**, connected with male-to-female jumper wires. Nothing to buy except the print.
 
 Same look as the custom-board case in `../case`: rounded edges, a shadow line where the lid meets the base, a
 snap-fit lid (no screws), a glossy black screen panel, big round buttons with trim rings, a styling line around the base, a recessed USB port, a slotted speaker grille, a chamfered side wheel and pockets for rubber feet. No name or logo on it (set `LOGO.front` / `LOGO.bottom` in the script to engrave XONRA).
 
-Outside size: **59.8 × 87.3 × 37.6 mm**. It is thick because jumper wires need room. A soldered build can be much thinner (see `../carrier`).
+Outside size: **39.8 × 87.8 × 37.6 mm** (sized from the owner's measured parts: narrow 83 × 35 mm breadboard, 50 × 25 mm NodeMCU, 12 × 12 mm buttons, 15 mm knob). It is thick because jumper wires need room. A soldered build can be much thinner (see `../carrier`).
 
 | File | Print | What it is |
 |---|---|---|
 | `base.stl` | 1 | the box: holds the breadboard, USB opening at the bottom, buzzer grille on the left, wheel hole on the right |
 | `lid.stl` | 1 | the top: screen window, button holes, OLED holder underneath (already lying top face down) |
 | `button-cap-main.stl`, `button-cap-second.stl` | 1 each | big round caps (main 16 mm, second 12 mm) |
-| `button-holder-main.stl`, `button-holder-second.stl` | 1 each | hold the 6×6 buttons under the caps; glued under the lid |
+| `button-holder-main.stl`, `button-holder-second.stl` | 1 each | hold the 12×12 buttons under the caps (take their coloured caps off); glued under the lid |
 | `screen-panel.stl` | 1 | glossy black panel around the screen; drops into the lid from above (print top face down on a smooth bed) |
 | `wheel-knob.stl` | 1 | knurled wheel with chamfered edges, presses onto the pot's shaft |
 | `inside-preview.stl` | no | the parts inside, for viewing only |
@@ -33,7 +33,7 @@ Outside size: **59.8 × 87.3 × 37.6 mm**. It is thick because jumper wires need
    end at the **bottom** (next to the opening). Push the NodeMCU as close to that end as it goes.
 2. **Screen:** put the OLED face up into the frame under the lid (pins toward the top end), so the screen shows
    through the window. A dot of hot glue at two corners. Female ends of the jumper wires go on its pins.
-3. **Buttons:** drop each cap into its hole from underneath (the flange stops it). Glue a 6×6 button into the
+3. **Buttons:** drop each cap into its hole from underneath (the flange stops it). Glue a 12×12 button (coloured cap off) into the
    square socket of its holder, stem through the small hole, then glue the holder onto the ring under the lid.
    Bend the button legs sideways and put the female wire ends on them.
 4. **Wheel:** push the potentiometer's threaded part through the hole in the right side from inside, tighten its
@@ -46,11 +46,11 @@ Outside size: **59.8 × 87.3 × 37.6 mm**. It is thick because jumper wires need
 
 Change these at the top of `xonra-case.js` (block `P`), then run it again:
 
-- `bb`: breadboard size (default the 400-point half size, 82.5 × 55 × 8.5 mm).
-- `node`: NodeMCU size (default the CH340 "v3", 58 × 31.5 mm; the "Amica" CP2102 one is 49 × 26).
+- `bb`: breadboard size (now 83 × 35 × 8.5 mm).
+- `node`: NodeMCU size (now 50 × 25 mm).
 - `oled`: module size and where the picture sits (`winOffY`).
-- `btn`: your button's body and total height (6×6×5 mm by default).
-- `pot`: the knob pot (WH148-style: 16 mm body, 7 mm thread, 6 mm D-shaft).
+- `btn`: your button's body and total height (now 12 × 12 × 7.3 mm).
+- `pot`: the knob pot (now 15 mm body, 7.6 mm hole, 6 mm shaft).
 
 ```
 npm install @jscad/modeling@2.12.5 @jscad/stl-serializer@2.1.20 opentype.js@1.3.4

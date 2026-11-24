@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 738.8 603.8" font-family="Inter, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 618.8 606.8" font-family="Inter, Arial, sans-serif">
 <title>xonraOS NodeMCU case</title>
 <rect width="100%" height="100%" fill="#f4f4f5"/>
-<rect x="40" y="40" width="358.79999999999995" height="523.8" rx="36" fill="#2b2b2e" stroke="#888"/><rect x="105.39999999999999" y="88.89999999999999" width="228" height="162" rx="18" fill="#0d0d0f"/><rect x="150.39999999999998" y="132.39999999999998" width="138" height="75" fill="#0b2a3a" stroke="#4da3ff"/><circle cx="285.4" cy="361.9" r="48" fill="#bdbdc2" stroke="#666"/><circle cx="153.39999999999998" cy="361.9" r="36" fill="#111" stroke="#666"/><rect x="398.79999999999995" y="229.89999999999998" width="48" height="120" rx="6" fill="#111" stroke="#666"/>
+<rect x="40" y="40" width="238.79999999999998" height="526.8" rx="36" fill="#2b2b2e" stroke="#888"/><rect x="66.39999999999999" y="93.39999999999999" width="186" height="156" rx="18" fill="#0d0d0f"/><rect x="90.39999999999999" y="133.89999999999998" width="138" height="75" fill="#0b2a3a" stroke="#4da3ff"/><circle cx="159.39999999999998" cy="339.4" r="48" fill="#bdbdc2" stroke="#666"/><circle cx="159.39999999999998" cy="465.40000000000003" r="36" fill="#111" stroke="#666"/><rect x="278.79999999999995" y="111.39999999999999" width="48" height="120" rx="6" fill="#111" stroke="#666"/>
 <g font-size="14" fill="#333">
-<text x="468.79999999999995" y="60" font-weight="700">xonraOS case (NodeMCU + OLED)</text>
-<text x="468.79999999999995" y="86">Outside 59.8 × 87.3 × 37.6 mm</text>
-<text x="468.79999999999995" y="110">Screen window 23 × 12.5 mm</text>
-<text x="468.79999999999995" y="134">Buttons 16 and 12 mm caps</text>
-<text x="468.79999999999995" y="158">Side wheel: knob on a 16 mm pot</text>
-<text x="468.79999999999995" y="182">USB at the bottom, buzzer grille on the left</text>
+<text x="348.79999999999995" y="60" font-weight="700">xonraOS case (NodeMCU + OLED)</text>
+<text x="348.79999999999995" y="86">Outside 39.8 × 87.8 × 37.6 mm</text>
+<text x="348.79999999999995" y="110">Screen window 23 × 12.5 mm</text>
+<text x="348.79999999999995" y="134">Buttons 16 and 12 mm caps</text>
+<text x="348.79999999999995" y="158">Side wheel: knob on a 16 mm pot</text>
+<text x="348.79999999999995" y="182">USB at the bottom, buzzer grille on the left</text>
 </g>
 </svg>
