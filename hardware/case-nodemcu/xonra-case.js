@@ -21,7 +21,7 @@ const { hull } = require('@jscad/modeling').hulls;
 // ---------- your parts (measure them) ----------
 const P = {
   // measured by the owner (Nov 2026): breadboard 83 x 35, NodeMCU 50 x 25, OLED board ~28 x 28, 12 x 12 buttons, knob 15 mm body
-  bb: { w: 35, d: 83, h: 8.5 },                      // narrow breadboard, lying flat, long side along y
+  bb: { w: 35, d: 83, h: 10 },                       // narrow breadboard, lying flat, long side along y
   node: { w: 25.5, d: 50, y0: -41.2, lift: 2.5, pcb: 1.6, h: 4.0 },  // NodeMCU "Amica" on the breadboard, USB end at the bottom (y0)
   oled: { w: 28.0, d: 28.0, t: 3.0, y: 22, winW: 23, winD: 12.5, winOffY: 1.0 },  // 0.96" module; window centre = module centre + winOffY (towards the pins)
   btn: { body: 12.0, bodyH: 4.3, total: 7.3, stem: 4.8 },  // 12x12 tactile switch (take its coloured cap off): body height, total height, stem hole

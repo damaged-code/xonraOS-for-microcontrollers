@@ -46,7 +46,7 @@ Outside size: **39.8 × 87.8 × 37.6 mm** (sized from the owner's measured parts
 
 Change these at the top of `xonra-case.js` (block `P`), then run it again:
 
-- `bb`: breadboard size (now 83 × 35 × 8.5 mm).
+- `bb`: breadboard size (now 83 × 35 × 10 mm).
 - `node`: NodeMCU size (now 50 × 25 mm).
 - `oled`: module size and where the picture sits (`winOffY`).
 - `btn`: your button's body and total height (now 12 × 12 × 7.3 mm).
