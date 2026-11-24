@@ -28,7 +28,7 @@ const P = {
   pot: { y: 2, d: 16.5, depth: 9.5, bushing: 7.4, shaft: 6, flat: 4.5 },   // WH148-style 16 mm pot, 7 mm bushing, 6 mm D-shaft, through the right wall
   buzzer: { y: 26, d: 12 },                          // 12 mm buzzer glued inside the left wall, behind a grille
 };
-const LOGO = { text: 'XONRA', font: 'C:/Windows/Fonts/ENGR.TTF', cap: 3.6, y: -28, depth: 0.5 };
+const LOGO = { text: 'XONRA', font: 'C:/Windows/Fonts/ENGR.TTF', cap: 3.6, y: -28, depth: 0.5, front: false, bottom: false };  // front / bottom: engrave the name there
 
 // ---------- case ----------
 const C = {
@@ -118,7 +118,7 @@ function base() {
   // underside: pockets for rubber feet and XONRA (mirrored so it reads from below)
   for (const sx of [-1, 1]) for (const sy of [-1, 1])
     b = subtract(b, cyl(C.feetD, C.feetDepth + 0.01, sx * (OW / 2 - C.feetInset), sy * (OD / 2 - C.feetInset), -0.01));
-  { const t = textShape(LOGO.text, C.bottomCap);
+  { const t = LOGO.bottom ? textShape(LOGO.text, C.bottomCap) : null;
     if (t) b = subtract(b, translate([0, 0, -1], extrudeLinear({ height: LOGO.depth + 1 }, mirrorX(t)))); }
   // side wheel: thumb scoop and the hole for the pot's threaded bushing
   b = subtract(b, cylinder({ radius: C.scoopR, height: zLid + 2, center: [OW / 2 + C.scoopR - C.scoopD, P.pot.y, zLid / 2 - 1], segments: 96 }));
@@ -166,7 +166,7 @@ function lid() {
     l = subtract(l, subtract(cyl(hole + 5, C.ring + 1, c.x, c.y, C.lid - C.ring), cyl(hole + 3.6, C.ring + 2, c.x, c.y, C.lid - C.ring - 1)));
   }
   let name = null;
-  const nm = textShape(LOGO.text, LOGO.cap);
+  const nm = LOGO.front ? textShape(LOGO.text, LOGO.cap) : null;
   if (nm) {
     const placed = translate([0, LOGO.y, 0], nm);
     l = subtract(l, translate([0, 0, C.lid - LOGO.depth], extrudeLinear({ height: LOGO.depth + 1 }, placed)));
@@ -223,7 +223,7 @@ function drawingSvg() {
   g += `<rect x="${X(-o.winW / 2)}" y="${Y(o.y + o.winD / 2)}" width="${o.winW * s}" height="${o.winD * s}" fill="#0b2a3a" stroke="#4da3ff"/>`;
   for (const k of ['main', 'second']) { const c = P.caps[k]; g += `<circle cx="${X(c.x)}" cy="${Y(c.y)}" r="${c.d / 2 * s}" fill="${k === 'main' ? '#bdbdc2' : '#111'}" stroke="#666"/>`; }
   g += `<rect x="${X(OW / 2)}" y="${Y(P.pot.y + 10)}" width="${8 * s}" height="${20 * s}" rx="6" fill="#111" stroke="#666"/>`;
-  g += `<text x="${X(0)}" y="${Y(LOGO.y) + 7}" text-anchor="middle" font-size="22" letter-spacing="6" fill="#9a9aa0">XONRA</text>`;
+  if (LOGO.front) g += `<text x="${X(0)}" y="${Y(LOGO.y) + 7}" text-anchor="middle" font-size="22" letter-spacing="6" fill="#9a9aa0">XONRA</text>`;
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${OW * s + 2 * pad + 300} ${OD * s + 2 * pad}" font-family="Inter, Arial, sans-serif">
 <title>xonraOS NodeMCU case</title>

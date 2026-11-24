@@ -4,7 +4,7 @@ A case for the build most people already have: **NodeMCU on a breadboard, 0.96" 
 and a 16 mm knob potentiometer**, connected with male-to-female jumper wires. Nothing to buy except the print.
 
 Same look as the custom-board case in `../case`: rounded edges, a shadow line where the lid meets the base, a
-snap-fit lid (no screws), a glossy black screen panel, big round buttons with trim rings, a styling line around the base, a recessed USB port, a slotted speaker grille, a chamfered side wheel, **XONRA** on the front and underneath, and pockets for rubber feet.
+snap-fit lid (no screws), a glossy black screen panel, big round buttons with trim rings, a styling line around the base, a recessed USB port, a slotted speaker grille, a chamfered side wheel and pockets for rubber feet. No name or logo on it (set `LOGO.front` / `LOGO.bottom` in the script to engrave XONRA).
 
 Outside size: **59.8 × 87.3 × 37.6 mm**. It is thick because jumper wires need room. A soldered build can be much thinner (see `../carrier`).
 
@@ -16,7 +16,6 @@ Outside size: **59.8 × 87.3 × 37.6 mm**. It is thick because jumper wires need
 | `button-holder-main.stl`, `button-holder-second.stl` | 1 each | hold the 6×6 buttons under the caps; glued under the lid |
 | `screen-panel.stl` | 1 | glossy black panel around the screen; drops into the lid from above (print top face down on a smooth bed) |
 | `wheel-knob.stl` | 1 | knurled wheel with chamfered edges, presses onto the pot's shaft |
-| `lid-name.stl` | optional | the XONRA letters, for a second colour |
 | `inside-preview.stl` | no | the parts inside, for viewing only |
 | `case-drawing.svg` | — | top view with sizes (opens in Figma) |
 | `xonra-case.js` | — | the editable model |
